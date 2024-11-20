@@ -1,0 +1,29 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "gw_utils"
+version = "0.0"
+authors = [ { name="Jessica Sydnor", email="js0311@mix.wvu.edu"},
+            { name="Sarah Burke-Spolaor", email="sarah.spolaor@mail.wvu.edu" },
+            { name="Jordan O'Kelley", email="jpo00013@mix.wvu.edu"},
+	    { name="Ryan Nowicki", email="ryan.nowicki@vanderbilt.edu"},
+	    ]
+description = "BOBcat source data, ingestion, and utilities codes."
+readme = "README.md"
+requires-python = ">3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+]
+dependencies = [
+	     "astropy",
+	     "Astroquery",
+	     "healpy",
+	     "numpy",
+	     "pandas"
+]
+
+[project.urls]
+"Homepage" = "http://sarahspolaor.faculty.wvu.edu/"
+"Issues" = "https://github.com/jessydno/BOBcat/issues"

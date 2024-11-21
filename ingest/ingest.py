@@ -8,17 +8,112 @@
 
 #########
 # Import the libraries, modules, and functions needed for the ingest function to work properly.
-import sys #this allows this script to be run from the bash command line with the key as an argument 
+#import sys #this allows this script to be run from the bash command line with the key as an argument 
 import pandas as pd #pandas dataframe that the csv file information gets read into for easy manipulation in python
 import numpy as np #numpy
-import psycopg2  #used to connect to the database in python 
+ 
 # Import the utilities made for BOBcat itself and the specific ingestion utilities made for this process.
-from BOBcat_utils import *
-from ingest_utils import *
-##########
+from gw_utils import calc as gw_calc
+
+
+
+
+
+
+
+
+################
+def ingest_candidate(candidate, db_info_path):
+
+    ''' Ingests a single candidate into a predefined database.
+
+    Inputs:
+        array containing the candidate parameters
+    Outputs:
+        NONE
+    '''
+
+    cur, conn = db_connect(db_info_path)
+
+    # Ingest the model into the database.
+    cur.execute("INSERT INTO candidate(\
+        name, \
+        ra_deg, \
+        dec_deg,\
+        redshift, \
+        obs_type_done) \
+        VALUES (%s,%s,%s,%s,%s);", candidate)
+    conn.commit() #make sure to actually commit the SQL command to the database
+
+    # Always make sure to close the connection to the database 
+    # (much like you should always close a file when done with it).
+    conn.close()
+###############
+
+
+
+################
+def ingest_binary_model(binary_model, db_info_path):
+
+    ''' Ingests a single binary model into a predefined database.
+
+    Inputs:
+        array containing the binary model class parameters
+    Outputs:
+        NONE - currently, will fix to show whether or not it successfully ingests the model
+    '''
+
+    cur, conn = db_connect(db_info_path)
+
+    # Ingest the model into the database.
+    cur.execute("INSERT INTO binary model(\
+        paper,\
+        candidate_name,\
+        eccentricity,\
+        m1,\
+        m2,\
+        mtot,\
+        mc,\
+        mu,\
+        q,\
+        evid1_type,\
+        evid1_note,\
+        evid1_wavelength,\
+        evid2_type,\
+        evid2_note,\
+        evid2_wavelength,\
+        evid3_type,\
+        evid3_note,\
+        evid3_wavelength,\
+        evid4_type,\
+        evid4_note,\
+        evid4_wavelength,\
+        inclination,\
+        semimajor_axis,\
+        seperation,\
+        period_epoch,\
+        orb_freq,\
+        orb_period,\
+        summary,\
+        caveats,\
+        ext_proj) \
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,\
+                %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s);", binary_model)
+    conn.commit() #make sure to actually commit the SQL command to the database
+
+    # Always make sure to close the connection to the database 
+    # (much like you should always close a file when done with it).
+    conn.close()
+###############
+
+
+
+
+
+
 
 ###############
-def ingest(key):
+def ingest(key, db_info_path):
 
     '''Ingestion of sources and models into database starting from a specific google spreadsheet
     setup.
@@ -56,7 +151,7 @@ def ingest(key):
             # This should truly be whether a creation of an instance of the source class is put. Still currently
             # working and debugging the class code after moving it from ipython notebooks to regular script 
             # python. Will come back and fix that as soon as the source class is better situated.
-            candidate = [ingestion_data.iloc[i,1], ra_deg, dec_deg, redshift]
+            candidate = [ned_name, ra_deg, dec_deg, redshift]
             # Now try to ingest the source. There is a try/except block here because you cannot ingest the same
             # source more than once. The primary key for the source table is the source name, so if you try to ingest
             # a source with a name that is already housed in the database SQL with throw an error and fully stop
@@ -64,13 +159,12 @@ def ingest(key):
             # therefore multiple models, so there could be multiple entries for a source in the spreadsheet. This
             # accounts for the SQL error thrown when that happens.
             try:
-                # Ingest the source into the database.
-                cur.execute("INSERT INTO candidate(Name, RA_deg, Dec_deg, Redshift)\
-                VALUES (%s, %s, %s, %s);", candidate)
-                conn.commit() #make sure to actually commit the SQL command to the database
+                ingest_candidate(candidate, db_info_path)
                 print("candidate ingested")
             except:
                 print("candidate not ingested")
+
+
         for i in range((len(ingestion_data))):
         # Check to see if there is an associated model parameter extraction spreadsheet for each source.
         if isinstance(ingestion_data.iloc[i,2],str): #this is checking the column for anything and converting it to strings (it could be a NaN if nothing was in the column)
@@ -93,12 +187,7 @@ def ingest(key):
             # Now try to ingest the source. There is a try/except block here for the exact same reasoning as for the
             # try/except block used above for ingesting sources.
             try:
-                # Ingest the model into the database.
-                cur.execute("INSERT INTO model(paper_link, source_name, eccentricity, m1, m2, m_tot, m_chirp, mu, q,\
-                    evidence, evidence_type, evidence_type_waveband, inclination, semimajor_axis, separation, period_epoch, \
-                    orb_frequency, orb_period, summary, caveats) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,\
-                    %s, %s, %s, %s, %s, %s, %s);", model)
-                conn.commit() #make sure to actually commit the SQL command to the database
+                ingest_binary_model(binary_model, db_info_path)
                 print("binary model ingested")
             except:
                 print("binary model not ingested")
@@ -107,129 +196,4 @@ def ingest(key):
         else:
             pass
 
-    conn.close()
 
-
-
-
-
-## ingest_source.py contains the code for the function ingest_source(). This function is what will
-## connect to a database and ingest a new source entry into the database. There is no manipulation of 
-## the source data within this function. This function takes an instance of the source class.
-## So all manipulation should be done prior to sending the source object to this function. 
-## Currently the function doesn't have a failsafe in terms of if the ingestion of the source doesn't go right.
-## This is something that needs to be added into the code because SQL will throw an error and stop if you
-## try to ingest something either with the same primary key already in the database or into a table that
-## doesn't yet exist.
-
-
-
-##########
-# Import the different libraries and modules needed for the function
-import psycopg2  #used to connect to the database in python
-#########
-
-# This is defining where the file that holds the database connection information lives.
-# This is here to make it easy to change, however, this code may change soon to be housed
-# somewhere where the changes would only need to happen once for changing the database
-# information for all ingestion utility functions.
-db_file = "ingest_utils/ingest_trial_db_info.txt"
-
-
-##############
-def ingest_source(source):
-    
-    ''' Ingests a single source class instance into a predefined database.
-
-    Inputs:
-        source class instance
-        OR
-        array of [Name, RA_deg, Dec_deg, Redshift]
-    Outputs:
-        NONE - currently, will fix to show whether or not it successfully ingests the source
-    '''
-
-    # Read the database name, user, password, host, and port from a text file that is selectively given out.
-    db_info_file = open(db_file)
-    db_info = db_info_file.read().split("\n")[0:5] #read only the first 5 lines and separate based on newline character
-    db_info_file.close() #always make sure to close the file
-
-
-    # Connect to the database in python.
-    conn = psycopg2.connect(database = db_info[0], user = db_info[1], password = db_info[2], host = db_info[3],
-                            port = db_info[4] )
-    
-    # Create a cursor instance within the database that allows you to enter SQL commands through python.
-    cur = conn.cursor()
-
-    # Ingest the source into the database.
-    cur.execute("INSERT INTO source(Name, RA_deg, Dec_deg, Redshift)\
-    VALUES (%s, %s, %s, %s);", source)
-    conn.commit() #make sure to actually commit the SQL command to the database
-
-    # Always make sure to close the connection to the database 
-    # (much like you should always close a file when done with it).
-    conn.close()
-#############
-    
-
-
-## ingest_model.py contains code for the function ingest_model(). This function is what will
-## connect to a database and ingest a new model entry into the database. There is no manipulation of 
-## the model data within this function. This function takes an instance of the model class.
-## So all manipulation should be done prior to sending the model object to this function. 
-## Currently the function doesn't have a failsafe in terms of if the ingestion of the model doesn't go right.
-## This is something that needs to be added into the code because SQL will throw an error and stop if you
-## try to ingest something either with the same primary key already in the database or into a table that
-## doesn't yet exist.
-
-
-
-######
-# Import the need libraries and modules for the function to work.
-import psycopg2 #what's needed to connect to a postgres database within python
-######
-
-# This is defining where the file that holds the database connection information lives.
-# This is here to make it easy to change, however, this code may change soon to be housed
-# somewhere where the changes would only need to happen once for changing the database
-# information for all ingestion utility functions.
-db_file = "ingest_utils/ingest_trial_db_info.txt"
-
-
-################
-def ingest_model(model):
-
-    ''' Ingests a single model class instance into a predefined database.
-
-    Inputs:
-        model class instance
-        OR
-        array containing the model class parameters
-    Outputs:
-        NONE - currently, will fix to show whether or not it successfully ingests the model
-    '''
-
-    # Read the database name, user, password, host, and port from a text file that is selectively given out.
-    db_info_file = open(db_file)
-    db_info = db_info_file.read().split("\n")[0:5] #read only the first 5 lines and separate based on newline character
-    db_info_file.close() #always make sure to close the file
-
-    # Connect to the database in python.
-    conn = psycopg2.connect(database = db_info[0], user = db_info[1], password = db_info[2], host = db_info[3],
-                            port = db_info[4] )
-    
-    # Create a cursor instance within the database that allows you to enter SQL commands through python.
-    cur = conn.cursor()
-
-    # Ingest the model into the database.
-    cur.execute("INSERT INTO model(paper_link, source_name, eccentricity, m1, m2, m_tot, m_chirp, mu, q,\
-    evidence, evidence_type, evidence_type_waveband, inclination, semimajor_axis, separation, period_epoch, \
-    orb_frequency, orb_period, summary, caveats) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,\
-    %s, %s, %s, %s, %s, %s, %s);", model)
-    conn.commit() #make sure to actually commit the SQL command to the database
-
-    # Always make sure to close the connection to the database 
-    # (much like you should always close a file when done with it).
-    conn.close()
-###############

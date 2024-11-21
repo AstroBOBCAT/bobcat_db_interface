@@ -11,7 +11,7 @@
 import sys #this allows this script to be run from the bash command line with the key as an argument 
 import pandas as pd #pandas dataframe that the csv file information gets read into for easy manipulation in python
 import numpy as np #numpy
-import psycopg2  #used to connect to the database in python
+import psycopg2  #used to connect to the database in python 
 # Import the utilities made for BOBcat itself and the specific ingestion utilities made for this process.
 from BOBcat_utils import *
 from ingest_utils import *
@@ -38,23 +38,6 @@ def ingest(key):
     # This information gets put into a pandas dataframe for easy manipulation in python.
     ingestion_data = pd.read_csv(url, usecols = ["Paper Link", "NED Name", "Model Parameter Details"])
 
-    # This is defining where the file that holds the database connection information lives.
-    # This is here to make it easy to change, however, this code may change soon to be housed
-    # somewhere where the changes would only need to happen once for changing the database
-    # information for all ingestion utility functions.
-    db_file = "ingest_utils/ingest_trial_db_info.txt"
-
-    # Read the database name, user, password, host, and port from a text file that is selectively given out.
-    db_info_file = open(db_file)
-    db_info = db_info_file.read().split("\n")[0:5] #read only the first 5 lines and separate based on newline character
-    db_info_file.close() #always make sure to close the file   
-
-    # Connect to the database in python.
-    conn = psycopg2.connect(database = db_info[0], user = db_info[1], password = db_info[2], host = db_info[3],
-                            port = db_info[4] )
-    
-    # Create a cursor instance within the database that allows you to enter SQL commands through python.
-    cur = conn.cursor()
 
     # Go through all the different sources from the spreadsheet.
     for i in range((len(ingestion_data))):

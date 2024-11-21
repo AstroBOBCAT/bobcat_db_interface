@@ -1,13 +1,13 @@
 import psycopg2  #used to connect to the database in python
 
 
-def db_connect():
+def db_connect(db_file):
 
     # This is defining where the file that holds the database connection information lives.
     # This is here to make it easy to change, however, this code may change soon to be housed
     # somewhere where the changes would only need to happen once for changing the database
     # information for all ingestion utility functions.
-    db_file = "ingest_utils/ingest_trial_db_info.txt"
+    #db_file = "ingest_utils/ingest_trial_db_info.txt"
 
     # Read the database name, user, password, host, and port from a text file that is selectively given out.
     db_info_file = open(db_file)

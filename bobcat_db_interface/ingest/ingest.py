@@ -17,6 +17,36 @@ from gw_utils import calc as gw_calc
 
 
 
+## This script is used to create the full url needed for having the information in the expected google 
+## spreadsheet that is outputted into a csv file. All the function needs is the google spreadsheet key that can
+## be found in the google spreadsheet link. Note that the link in the browser when you open a google
+## spreadsheet will contain the key needed but it is not the correct url needed. Hence this function
+## was created to make sure the url was the correct format needed.
+
+##############
+def create_url(key):
+
+    '''Create url for a google spreadsheet such that it is in csv format given the spreadsheet key.
+    
+    Inputs:
+        key - this is a long string of random letters and numbers found in all the links to the 
+        google spreadsheet in question
+        
+    Outputs:
+        url string
+    '''
+
+    # First we need to check that the key given is actually a string.
+    # If it isn't a string we could change it into a string but it is probably better to raise an error to
+    # make sure the user is aware of what is wanted for the function.
+    if not isinstance(key, str):
+        raise TypeError("key must be a string")
+
+    # Concatenate the key with the needed strings. The last portion is what turns the google spreadsheet into
+    # csv format which makes it very easy to read into a pandas dataframe in other functions.
+    url = "https://docs.google.com/spreadsheet/ccc?key=" + key + "&output=csv"
+    return url
+#############
 
 
 
@@ -167,33 +197,33 @@ def ingest(key, db_info_path):
 
         for i in range((len(ingestion_data))):
         # Check to see if there is an associated model parameter extraction spreadsheet for each source.
-        if isinstance(ingestion_data.iloc[i,2],str): #this is checking the column for anything and converting it to strings (it could be a NaN if nothing was in the column)
-            # Pull just the key of the google spreadsheet out of the link that is listed in the source spreadsheet.
-            binary_model_key = ingestion_data.iloc[i,2].split("/")[-2]
-            # Create the full url to the model parameter extraction spreadsheet
-            binary_model_url = create_url(binary_model_key)
-            # Pull the relativant information about the model from the google spreadsheet.
-            # This information gets put into a pandas dataframe for easy manipulation in python.
-            binary_model_info = pd.read_csv(binary_model_url, \
-                usecols = ['Name', 'Value','Error', 'Error type', 'Units'])
-            # Get rid of any actual NaN values because SQL does not like or except that value when trying to
-            # ingest model information.
-            binary_model_info.replace(np.nan, "", regex=True)
-            # Create the model array needed to use the ingest_model function. 
-            # This should truly be whether a creation of an instance of the model class is put. Still currently
-            # working and debugging the class code after moving it from ipython notebooks to regular script 
-            # python. Will come back and fix that as soon as the model class is better situated.
-            binary_model = binary_model_info.iloc[:,1].to_numpy()
-            # Now try to ingest the source. There is a try/except block here for the exact same reasoning as for the
-            # try/except block used above for ingesting sources.
-            try:
-                ingest_binary_model(binary_model, db_info_path)
-                print("binary model ingested")
-            except:
-                print("binary model not ingested")
-        # If there isn't actually a link to a model parameter extraction spreadsheet associated with the source
-        # entry then just skip over to the next one and check if it has an entry.
-        else:
-            pass
+            if isinstance(ingestion_data.iloc[i,2],str): #this is checking the column for anything and converting it to strings (it could be a NaN if nothing was in the column)
+                # Pull just the key of the google spreadsheet out of the link that is listed in the source spreadsheet.
+                binary_model_key = ingestion_data.iloc[i,2].split("/")[-2]
+                # Create the full url to the model parameter extraction spreadsheet
+                binary_model_url = create_url(binary_model_key)
+                # Pull the relativant information about the model from the google spreadsheet.
+                # This information gets put into a pandas dataframe for easy manipulation in python.
+                binary_model_info = pd.read_csv(binary_model_url, \
+                    usecols = ['Name', 'Value','Error', 'Error type', 'Units'])
+                # Get rid of any actual NaN values because SQL does not like or except that value when trying to
+                # ingest model information.
+                binary_model_info.replace(np.nan, "", regex=True)
+                # Create the model array needed to use the ingest_model function. 
+                # This should truly be whether a creation of an instance of the model class is put. Still currently
+                # working and debugging the class code after moving it from ipython notebooks to regular script 
+                # python. Will come back and fix that as soon as the model class is better situated.
+                binary_model = binary_model_info.iloc[:,1].to_numpy()
+                # Now try to ingest the source. There is a try/except block here for the exact same reasoning as for the
+                # try/except block used above for ingesting sources.
+                try:
+                    ingest_binary_model(binary_model, db_info_path)
+                    print("binary model ingested")
+                except:
+                    print("binary model not ingested")
+            # If there isn't actually a link to a model parameter extraction spreadsheet associated with the source
+            # entry then just skip over to the next one and check if it has an entry.
+            else:
+                pass
 
 

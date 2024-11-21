@@ -2,6 +2,8 @@ import psycopg2  #used to connect to the database in python
 
 
 def db_connect(db_info_file):
+    
+    print("in db_connect")
 
     # This is defining where the file that holds the database connection information lives.
     # This is here to make it easy to change, however, this code may change soon to be housed
@@ -20,5 +22,7 @@ def db_connect(db_info_file):
     
     # Create a cursor instance within the database that allows you to enter SQL commands through python.
     cur = conn.cursor()
+
+    print("at the end of db_connect")
 
     return cur, conn

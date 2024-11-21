@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "gw_utils"
+name = "bobcat_db_interface"
 version = "0.0"
 authors = [ { name="Jessica Sydnor", email="js0311@mix.wvu.edu"},
             { name="Sarah Burke-Spolaor", email="sarah.spolaor@mail.wvu.edu" },
@@ -17,9 +17,10 @@ classifiers = [
     "Programming Language :: Python :: 3",
 ]
 dependencies = [
-	     "astropy",
-	     "Astroquery",
-	     "healpy",
+	     "gw_utils",
+		 "os",
+		 "sys",
+	     "psycopg2",
 	     "numpy",
 	     "pandas"
 ]

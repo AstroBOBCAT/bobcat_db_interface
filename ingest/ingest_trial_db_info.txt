@@ -1,0 +1,13 @@
+bobcat_ingest_test
+postgres
+Astro1123!
+localhost
+5432
+
+
+The order is:
+database
+user
+password
+host
+port

@@ -1,0 +1,7 @@
+# This should be copied into your own home directory as follows,
+# .bobcat/db_info.txt
+dbname:fillmein
+user:fillmein
+pass:fillmein
+host:fillmein
+port:fillmein

@@ -1,7 +1,9 @@
-import parser
+import argparse
 from bobcat_db_interface.ingestion import ingest
 
 if __name__ == "__main__":
+
+     print("Testing testing all around town")
 
      # Set up command line parsing
      parser = argparse.ArgumentParser(
@@ -31,9 +33,13 @@ if __name__ == "__main__":
           print("Will run an actual ingestion with this fake input key.")
           # THIS ISNT WORKING YET.
           
+
+
+     print("You put in the password "+myinputs.official[0])
      # Here's an example where we read one value. Here I didn't include
      # an "if" statement because this value was required.
-     if (myinputs.official == 'yes-i-really-want-to-do-this'):
+     if (myinputs.official[0] == "yes-i-really-want-to-do-this"):
+          print("Correct passcode! Will proceed with ingest.\n")
           ingest.ingest()
      else:
           print("*********\nERROR: WRONG PASSCODE, cannot complete your request for an ingest.\n********\n");

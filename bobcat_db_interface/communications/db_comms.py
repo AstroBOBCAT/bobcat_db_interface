@@ -1,5 +1,5 @@
 import psycopg2  #used to connect to the database in python
-from bobcat_db_interface import db_info
+from bobcat_db_interface.keys import db_info
 
 def db_connect():
     
@@ -13,7 +13,8 @@ def db_connect():
 
     # Connect to the database in python.
     conn = psycopg2.connect(database = db_info['dbname'], user = db_info['user'], password = db_info['pass'], host = db_info['host'], port = db_info['port'] )
-    
+
+    print("I ran the psycopg2 conn command")
     # Create a cursor instance within the database that allows you to enter SQL commands through python.
     cur = conn.cursor()
 

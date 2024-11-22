@@ -232,7 +232,7 @@ def ingest(key, db_info_path):
                 # working and debugging the class code after moving it from ipython notebooks to regular script 
                 # python. Will come back and fix that as soon as the model class is better situated.
             binary_model = binary_model_info.iloc[:30,1]
-            print(binary_model)
+            #print(binary_model)
                 # Now try to ingest the source. There is a try/except block here for the exact same reasoning as for the
                 # try/except block used above for ingesting sources.
             try:
@@ -246,6 +246,6 @@ def ingest(key, db_info_path):
             print("no parameter url in the data entry list")
 
 
-    return(binary_model)
+    #return(binary_model)
 
 

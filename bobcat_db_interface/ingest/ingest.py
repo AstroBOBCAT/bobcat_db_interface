@@ -17,10 +17,10 @@ from gw_utils import calc as gw_calc
 from gw_utils import ned as ned
 
 from bobcat_db_interface.communications import db_comms
+from bobcat_db_interface.communications import db_info
 
 
-
-## This script is used to create the full url needed for having the information in the expected google 
+## This is used to create the full url needed for having the information in the expected google 
 ## spreadsheet that is outputted into a csv file. All the function needs is the google spreadsheet key that can
 ## be found in the google spreadsheet link. Note that the link in the browser when you open a google
 ## spreadsheet will contain the key needed but it is not the correct url needed. Hence this function
@@ -56,7 +56,7 @@ def create_url(key):
 
 
 ################
-def ingest_candidate(candidate, db_info_path):
+def ingest_candidate(candidate):
 
     ''' Ingests a single candidate into a predefined database.
 
@@ -67,7 +67,7 @@ def ingest_candidate(candidate, db_info_path):
     '''
     print("in ingest_candidate")
 
-    cur, conn = db_comms.db_connect(db_info_path)
+    cur, conn = db_comms.db_connect()
 
     print("connected to the database")
 
@@ -89,7 +89,7 @@ def ingest_candidate(candidate, db_info_path):
 
 
 ################
-def ingest_binary_model(binary_model, db_info_path):
+def ingest_binary_model(binary_model):
 
     ''' Ingests a single binary model into a predefined database.
 
@@ -100,7 +100,7 @@ def ingest_binary_model(binary_model, db_info_path):
     '''
     print("in ingest_binary_model")
 
-    cur, conn = db_comms.db_connect(db_info_path)
+    cur, conn = db_comms.db_connect()
 
     # Ingest the model into the database.
     cur.execute("INSERT INTO binary_model(\
@@ -150,7 +150,7 @@ def ingest_binary_model(binary_model, db_info_path):
 
 
 ###############
-def ingest(key, db_info_path):
+def ingest(key):
 
     '''Ingestion of sources and models into database starting from a specific google spreadsheet
     setup.
@@ -209,7 +209,7 @@ def ingest(key, db_info_path):
         # therefore multiple models, so there could be multiple entries for a source in the spreadsheet. This
         # accounts for the SQL error thrown when that happens.
         try:
-            ingest_candidate(candidate, db_info_path)
+            ingest_candidate(candidate)
             print("candidate ingested")
         except:
             print("candidate not ingested")
@@ -236,7 +236,7 @@ def ingest(key, db_info_path):
                 # Now try to ingest the source. There is a try/except block here for the exact same reasoning as for the
                 # try/except block used above for ingesting sources.
             try:
-                ingest_binary_model(binary_model, db_info_path)
+                ingest_binary_model(binary_model)
                 print("binary model ingested")
             except:
                 print("binary model not ingested")
@@ -249,3 +249,20 @@ def ingest(key, db_info_path):
     #return(binary_model)
 
 
+
+
+
+
+if __name__ == "__main__":
+    # add parsing from command line
+    # ingest.py -key asdfjasgdh -path /Users/sbs/.bobcat/db_info.txt
+    #
+
+    
+    # parse user inputs and read user info from file
+
+    # Run ingest function.
+
+
+
+    ingest("1WU4c_FCEOMEmd1m_680qtqNR7rFIzNztT2GxZpX4dvk","/Users/sbs/.bobcat/db_info.txt")

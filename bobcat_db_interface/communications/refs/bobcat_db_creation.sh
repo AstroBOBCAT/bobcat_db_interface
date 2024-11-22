@@ -1,5 +1,7 @@
 CREATE DATABASE bobcat;
 
+\c bobcat
+
 CREATE TABLE candidate (
     name VARCHAR(50),
     ra_deg FLOAT8,

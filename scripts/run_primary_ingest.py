@@ -1,44 +1,40 @@
+import parser
 from bobcat_db_interface.ingestion import ingest
 
 if __name__ == "__main__":
-     # add parsing from command line
-     # ingest.py -key asdfjasgdh -path /Users/sbs/.bobcat/db_info.txt
-     # parse user inputs and read user info from file
-     # Run ingest function.
-     
+
      # Set up command line parsing
      parser = argparse.ArgumentParser(
-          prog="template.py",
-          description="A description of your code goes here and comes out when people run the code with -h as an input.",
-     )
-     parser.add_argument(
-          "-b",
-          "--basic",
-          help="Here's a basic input. I've set it to be required for the program to run. It needs one value to be provided.",
-          required=True,
-          nargs=1
+          prog="run_primary_ingest.py",
+          description="This is the wrapper code that will be run to ingest the primary BOBcat data. It is intended to be run once for the first large ingest, and then again as needed (approximately once per month) for new candidates thereafter.",
      )
      parser.add_argument(
           "-o",
-          "--option",
-          help="This is an example of an option that requests an arbitrarily large list of values (for instance, might be used to get a list of files). I set this option to not be required for the program to run.",
+          "--official",
+          help="This creates an official run of the ingestion. It's basically a safeguard so we don't run an unintentional ingest. To make the official ingest run you must supply this option and the case-sensitive passcode yes-i-really-want-to-do-this",
           required=False,
-          nargs="+",
+          nargs=1,
      )
      parser.add_argument(
-          "-v",
-          "--verbose",
-          help="Here's an example of a true/false input parameter that doesn't take in any actual values. In this case, I'm setting it to turn on lots more printing. That is, it is used to turn on DEBUG-level (general) logging.",
+          "-k",
+          "--key",
+          help="For testing, you can optionally input a manual key that differs from the one in your db_info file.",
           required=False,
-          action='store_true'
+          nargs=1,
      )
-
-     # Set a variable to house the input arguments. You can see below
-     # how you call them and use the provided values.
-     allmyinputs = parser.parse_args() 
+     myinputs = parser.parse_args() 
 
 
+     
+     if (myinputs.key):
+          print("You input the optional key ",str(myinputs.key))
+          print("Will run an actual ingestion with this fake input key.")
+          # THIS ISNT WORKING YET.
+          
      # Here's an example where we read one value. Here I didn't include
      # an "if" statement because this value was required.
-     important_number = allmyinputs.basic
-
+     if (myinputs.official == 'yes-i-really-want-to-do-this'):
+          ingest.ingest()
+     else:
+          print("*********\nERROR: WRONG PASSCODE, cannot complete your request for an ingest.\n********\n");
+          exit()

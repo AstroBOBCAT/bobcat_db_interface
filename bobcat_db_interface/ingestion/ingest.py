@@ -17,7 +17,7 @@ from gw_utils import calc as gw_calc
 from gw_utils import ned as ned
 
 from bobcat_db_interface.communications import db_comms
-from bobcat_db_interface.communications import db_info
+from bobcat_db_interface import db_info
 
 
 ## This is used to create the full url needed for having the information in the expected google 

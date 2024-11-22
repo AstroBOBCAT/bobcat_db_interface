@@ -5,3 +5,4 @@ user:fillmein
 pass:fillmein
 host:fillmein
 port:fillmein
+googlekey:fillmein

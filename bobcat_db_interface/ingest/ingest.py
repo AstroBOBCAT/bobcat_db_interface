@@ -27,9 +27,15 @@ from bobcat_db_interface.communications import db_info
 ## was created to make sure the url was the correct format needed.
 
 ##############
+# SARAH! This key needs to stay key because it's referenced by both
+# the master and parameter extraction functions.
+##############
 def create_url(key):
 
-    '''Create url for a google spreadsheet such that it is in csv format given the spreadsheet key.
+    '''.
+
+    Create url for a google spreadsheet such that it is in csv format
+    given the spreadsheet key.
     
     Inputs:
         key - this is a long string of random letters and numbers found in all the links to the 
@@ -37,16 +43,19 @@ def create_url(key):
         
     Outputs:
         url string
+
     '''
 
     # First we need to check that the key given is actually a string.
-    # If it isn't a string we could change it into a string but it is probably better to raise an error to
-    # make sure the user is aware of what is wanted for the function.
+    # If it isn't a string we could change it into a string but it is
+    # probably better to raise an error to make sure the user is aware
+    # of what is wanted for the function.
     if not isinstance(key, str):
         raise TypeError("key must be a string")
 
-    # Concatenate the key with the needed strings. The last portion is what turns the google spreadsheet into
-    # csv format which makes it very easy to read into a pandas dataframe in other functions.
+    # Concatenate the key with the needed strings. The last portion is
+    # what turns the google spreadsheet into csv format which makes it
+    # very easy to read into a pandas dataframe in other functions.
     url = "https://docs.google.com/spreadsheet/ccc?key=" + key + "&output=csv"
     return url
 #############
@@ -150,24 +159,31 @@ def ingest_binary_model(binary_model):
 
 
 ###############
-def ingest(key):
+def ingest():
 
-    '''Ingestion of sources and models into database starting from a specific google spreadsheet
-    setup.
+    '''.
+
+    Ingestion of sources and models into database starting from a
+    specific google spreadsheet setup.
     
     Inputs:
-        key(string) = this is the key that is associated with a google spreadsheet
+        N/A
     Outputs:
         statements telling you whether a source/model has been ingested into the database
+
     '''
 
-    # Create the url to the google spreadsheet that contains the source information and a possible link to 
-    # a model parameter extraction google spreadsheet from the key string value given for using the function.
-    url = create_url(key)
+    # Create the url to the google spreadsheet that contains the
+    # source information and a possible link to a model parameter
+    # extraction google spreadsheet from the key string value given
+    # for using the function.
+    url = create_url(db_info['googlekey'])
 
-    # Pull the relativant information about the source from the google spreadsheet, this includes the paper link,
-    # the name of the source in NED, and a link to another google spreadsheet that contains the model parameter information.
-    # This information gets put into a pandas dataframe for easy manipulation in python.
+    # Pull the relativant information about the source from the google
+    # spreadsheet, this includes the paper link, the name of the
+    # source in NED, and a link to another google spreadsheet that
+    # contains the model parameter information.  This information gets
+    # put into a pandas dataframe for easy manipulation in python.
     ingestion_data = pd.read_csv(url, usecols = ["Paper Link", "Candidate Name",  "NED Name", "Model Parameter Details"])
 
 
@@ -176,12 +192,16 @@ def ingest(key):
         # Set the ned_name variable as the information from the NED Name column.
         ned_name = ingestion_data.iloc[i,2]
         print(ned_name)
-        # If there is a ned_name given (note that it is possible some candidates don't have this so think about
-        # what would need to be done to account for that), get the j2000 ra and dec of the source in degrees, as well
-        # as the redshift. Should probably put in / use the NED name resolver function in BOBcat utils at this 
-        # point as well, will come back and figure out exactly where in the script it should be added.
+        # If there is a ned_name given (note that it is possible some
+        # candidates don't have this so think about what would need to
+        # be done to account for that), get the j2000 ra and dec of
+        # the source in degrees, as well as the redshift. Should
+        # probably put in / use the NED name resolver function in
+        # BOBcat utils at this point as well, will come back and
+        # figure out exactly where in the script it should be added.
         if ned_name:
-            # Set the ra_deg and dec_deg variables to the j2000 ra and dec positions given in NED for the source.
+            # Set the ra_deg and dec_deg variables to the j2000 ra and
+            # dec positions given in NED for the source.
             try:
                 ra, dec = (gw_calc.coord_finder(ned_name))
             except:
@@ -196,18 +216,24 @@ def ingest(key):
             print("issues with reading and finding the correct candidate info for ingestion")
         
         obs_type_done = []
-        # Create the source array needed to use the ingest_source function. 
-        # This should truly be whether a creation of an instance of the source class is put. Still currently
-        # working and debugging the class code after moving it from ipython notebooks to regular script 
-        # python. Will come back and fix that as soon as the source class is better situated.
+        # Create the source array needed to use the ingest_source
+        # function.  This should truly be whether a creation of an
+        # instance of the source class is put. Still currently working
+        # and debugging the class code after moving it from ipython
+        # notebooks to regular script python. Will come back and fix
+        # that as soon as the source class is better situated.
         candidate = [ned_name, ra_deg, dec_deg, redshift, obs_type_done]
         print(candidate)
-        # Now try to ingest the source. There is a try/except block here because you cannot ingest the same
-        # source more than once. The primary key for the source table is the source name, so if you try to ingest
-        # a source with a name that is already housed in the database SQL with throw an error and fully stop
-        # the ingestion process. However, there is the possibility that a source would have multiple papers, and
-        # therefore multiple models, so there could be multiple entries for a source in the spreadsheet. This
-        # accounts for the SQL error thrown when that happens.
+        # Now try to ingest the source. There is a try/except block
+        # here because you cannot ingest the same source more than
+        # once. The primary key for the source table is the source
+        # name, so if you try to ingest a source with a name that is
+        # already housed in the database SQL with throw an error and
+        # fully stop the ingestion process. However, there is the
+        # possibility that a source would have multiple papers, and
+        # therefore multiple models, so there could be multiple
+        # entries for a source in the spreadsheet. This accounts for
+        # the SQL error thrown when that happens.
         try:
             ingest_candidate(candidate)
             print("candidate ingested")

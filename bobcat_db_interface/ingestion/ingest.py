@@ -290,5 +290,5 @@ if __name__ == "__main__":
     # Run ingest function.
 
 
-
-    ingest("1WU4c_FCEOMEmd1m_680qtqNR7rFIzNztT2GxZpX4dvk","/Users/sbs/.bobcat/db_info.txt")
+    ingest()
+    #ingest("1WU4c_FCEOMEmd1m_680qtqNR7rFIzNztT2GxZpX4dvk","/Users/sbs/.bobcat/db_info.txt")

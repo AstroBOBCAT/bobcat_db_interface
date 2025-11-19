@@ -241,12 +241,15 @@ def ingest():
         except:
             print("candidate not ingested")
 
+        print("DEBUG: NEXT STEPS aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
 
         if isinstance(ingestion_data.iloc[i,3],str): #this is checking the column for anything and converting it to strings (it could be a NaN if nothing was in the column)
             # Pull just the key of the google spreadsheet out of the link that is listed in the source spreadsheet.
-            binary_model_key = ingestion_data.iloc[i,3].split("/")[-2]
+            binary_model_key = ingestion_data.iloc[i,3].split("/")[5]
+            print("DEBUG: Primary model key "+binary_model_key)
             # Create the full url to the model parameter extraction spreadsheet
             binary_model_url = create_url(binary_model_key)
+            print("DEBUG: "+binary_model_url)
             # Pull the relativant information about the model from the google spreadsheet.
             # This information gets put into a pandas dataframe for easy manipulation in python.
             binary_model_info = pd.read_csv(binary_model_url, \

@@ -1,4 +1,3 @@
-# SArah is demonstrating branching --- delete this line if you find it
 ## This ingestion script is to be used for ingesting sources from a google spreadsheet. This was choosen as the 
 ## offline verison on BOBcat that was created and used to collected candidates before BOBcat started and while
 ## BOBcat was in the beginning stages is in a google spreadsheet. However, this ingestion script could be used for
@@ -106,7 +105,7 @@ def ingest_binary_model(binary_model):
     Inputs:
         array containing the binary model class parameters
     Outputs:
-        NONE - currently, will fix to show whether or not it successfully ingests the model
+        NONE - NEED TO FIX: show whether or not it successfully ingests the model
     '''
     print("in ingest_binary_model")
 
@@ -143,7 +142,7 @@ def ingest_binary_model(binary_model):
         orb_period,\
         summary,\
         caveats,\
-        ext_proj) \
+        ext_proj) #\
             VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,\
                 %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s);", binary_model)
     conn.commit() #make sure to actually commit the SQL command to the database
@@ -164,8 +163,12 @@ def ingest():
 
     '''.
 
-    Ingestion of sources and models into database starting from a
-    specific google spreadsheet setup.
+    Primary ingestion of sources and models into database starting
+    from a specific google spreadsheet. The google key for the main
+    list is hidden in the user's dbinfo configuration file. You may
+    run testing on your own google spreadsheet. If you forget what the
+    primary ingestion googlekey is, you must ask SBS or J'OK, as it is
+    top secret.
     
     Inputs:
         N/A
@@ -240,6 +243,12 @@ def ingest():
             print("candidate ingested")
         except:
             print("candidate not ingested")
+            # JORDAN - NOTE THIS NEEDS TO KILL THE INGEST PROCESS WITH
+            # A REPORT OF THE TRACEBACK. If it fails, it should be
+            # clear why it failed.***Or, this whole process could keep some list
+            # of the unsuccessful entries (maybe referencing what line
+            # in the spreadsheet they represent -- this would help
+            # diagnosis from the person running this ingestion).
 
         print("DEBUG: NEXT STEPS aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
 
@@ -270,11 +279,26 @@ def ingest():
                 print("binary model ingested")
             except:
                 print("binary model not ingested")
-            # If there isn't actually a link to a model parameter extraction spreadsheet associated with the source
-            # entry then just skip over to the next one and check if it has an entry.
-        else:
-            print("no parameter url in the data entry list")
+                # JORDAN - Same thing here. THIS NEEDS TO KILL THE INGEST PROCESS WITH
+                # A REPORT OF THE TRACEBACK. If it fails, it should be
+                # clear why it failed.***Or, this whole process could keep some list
+                # of the unsuccessful entries (maybe referencing what line
+                # in the spreadsheet they represent -- this would help
+                # diagnosis from the person running this ingestion).
 
+        else:
+            # JORDAN - THIS NEEDS TO PRESENT AN ERROR NOT JUST PROCEED
+            # GRACIUOSLY. ***Or, this whole process could keep some list
+            # of the unsuccessful entries (maybe referencing what line
+            # in the spreadsheet they represent -- this would help
+            # diagnosis from the person running this ingestion).
+
+            # If there isn't actually a link to a model parameter
+            # extraction spreadsheet associated with the source entry
+            # then just skip over to the next one and check if it has
+            # an entry.
+            print("no parameter url in the data entry list")
+        
 
     #return(binary_model)
 

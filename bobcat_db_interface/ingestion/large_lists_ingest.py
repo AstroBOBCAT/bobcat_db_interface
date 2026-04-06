@@ -141,7 +141,7 @@ def ingest_wchPLUS09():
                     "", # evid4_wavelength
                     "", # inclination
                     "", # semimajor_axis
-                    "", # seperation
+                    "", # separation
                     "", # period_epoch
                     "", # orb_freq
                     "", # orb_period
@@ -156,6 +156,8 @@ def ingest_wchPLUS09():
     # Now try to ingest the source.
 
     return
+
+
 
 
 
@@ -196,7 +198,7 @@ def ingest_all():
     #    ingestion_data = pd.read_csv(url, usecols = ["Paper Link", "Brief Description",  "Paper data file", "Model Parameter Details"])
     #except Exception as err:
     #    print("Error: Could not read large list URL ",url)
-    #    print("Reported error: ",err)
+    #    print(f"Reported error: {err}")
     #    exit()
 '''
     return

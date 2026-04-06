@@ -226,7 +226,7 @@ def ingest():
         # and debugging the class code after moving it from ipython
         # notebooks to regular script python. Will come back and fix
         # that as soon as the source class is better situated.
-        candidate = [ned_name, ra_deg, dec_deg, redshift, obs_type_done]
+        candidate = [ned_name, ra_deg,dec_deg,redshift, obs_type_done]
         print(candidate)
         # Now try to ingest the source. There is a try/except block
         # here because you cannot ingest the same source more than
@@ -241,14 +241,15 @@ def ingest():
         try:
             ingest_candidate(candidate)
             print("candidate ingested")
-        except:
-            print("candidate not ingested")
-            # JORDAN - NOTE THIS NEEDS TO KILL THE INGEST PROCESS WITH
+        except Exception as err:
+            print(f"ERROR: Candidate not ingested,{err}")
+            # JORDAN - I MODIFIED THIS TO KILL THE INGEST PROCESS WITH
             # A REPORT OF THE TRACEBACK. If it fails, it should be
-            # clear why it failed.***Or, this whole process could keep some list
-            # of the unsuccessful entries (maybe referencing what line
-            # in the spreadsheet they represent -- this would help
-            # diagnosis from the person running this ingestion).
+            # more clear why it failed.***Or, this whole process could
+            # keep some list of the unsuccessful entries (maybe
+            # referencing what line in the spreadsheet they represent
+            # -- this would help diagnosis from the person running
+            # this ingestion).
 
         print("DEBUG: NEXT STEPS aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
 
@@ -276,15 +277,17 @@ def ingest():
                 # try/except block used above for ingesting sources.
             try:
                 ingest_binary_model(binary_model)
-                print("binary model ingested")
-            except:
-                print("binary model not ingested")
-                # JORDAN - Same thing here. THIS NEEDS TO KILL THE INGEST PROCESS WITH
-                # A REPORT OF THE TRACEBACK. If it fails, it should be
-                # clear why it failed.***Or, this whole process could keep some list
-                # of the unsuccessful entries (maybe referencing what line
-                # in the spreadsheet they represent -- this would help
-                # diagnosis from the person running this ingestion).
+                print("Binary model ingested")
+            except Exception as err:
+            print(f"ERROR: Binary model not ingested,{err}")
+                # JORDAN - Same thing here. I MODIFIED THIS TO KILL
+                # THE INGEST PROCESS WITH A REPORT OF THE
+                # TRACEBACK. If it fails, it still needs to be more
+                # clear why it failed.***Or, this whole process could
+                # keep some list of the unsuccessful entries (maybe
+                # referencing what line in the spreadsheet they
+                # represent -- this would help diagnosis from the
+                # person running this ingestion).
 
         else:
             # JORDAN - THIS NEEDS TO PRESENT AN ERROR NOT JUST PROCEED

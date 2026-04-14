@@ -1,0 +1,6 @@
+dbname:bobcat
+user:postgres
+pass:Bob_Ross840
+host:localhost
+port:5432
+googlekey:1DTFQ3KMg1qkonvCv6veT0TqLmC4hbdjUQ09_CQfVMoI

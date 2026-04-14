@@ -1,4 +1,3 @@
-# SArah is demonstrating branching --- delete this line if you find it
 ## This ingestion script is to be used for ingesting sources from a google spreadsheet. This was choosen as the 
 ## offline verison on BOBcat that was created and used to collected candidates before BOBcat started and while
 ## BOBcat was in the beginning stages is in a google spreadsheet. However, this ingestion script could be used for
@@ -12,7 +11,7 @@
 #import sys #this allows this script to be run from the bash command line with the key as an argument 
 import pandas as pd #pandas dataframe that the csv file information gets read into for easy manipulation in python
 import numpy as np #numpy
- 
+import psycopg2 
 # Import the utilities made for BOBcat itself and the specific ingestion utilities made for this process.
 from gw_utils import calc as gw_calc
 from gw_utils import ned as ned
@@ -82,15 +81,23 @@ def ingest_candidate(candidate):
     print("connected to the database")
 
     # Ingest the model into the database.
-    cur.execute("INSERT INTO candidate(\
-        name, \
-        ra_deg, \
-        dec_deg,\
-        redshift, \
-        obs_type_done) \
-        VALUES (%s,%s,%s,%s,%s);", candidate)
-    conn.commit() #make sure to actually commit the SQL command to the database
+#    cur.execute("INSERT INTO candidate(\
+#        name, \
+#        ra_deg, \
+#        dec_deg,\
+#        redshift, \
+#        obs_type_done) \
+#        VALUES (%s,%s,%s,%s,%s);", candidate)
 
+    cur.execute(
+            """
+            INSERT INTO candidate (
+                name, ra_deg, dec_deg, redshift, obs_type_done
+            ) VALUES (%s, %s, %s, %s, %s);
+            """,
+            candidate
+        )
+    conn.commit() #make sure to actually commit the SQL command to the database
     # Always make sure to close the connection to the database 
     # (much like you should always close a file when done with it).
     conn.close()
@@ -113,41 +120,43 @@ def ingest_binary_model(binary_model):
     cur, conn = db_comms.db_connect()
 
     # Ingest the model into the database.
-    cur.execute("INSERT INTO binary_model(\
-        paper,\
-        candidate_name,\
-        eccentricity,\
-        m1,\
-        m2,\
-        mtot,\
-        mc,\
-        mu,\
-        q,\
-        evid1_type,\
-        evid1_note,\
-        evid1_wavelength,\
-        evid2_type,\
-        evid2_note,\
-        evid2_wavelength,\
-        evid3_type,\
-        evid3_note,\
-        evid3_wavelength,\
-        evid4_type,\
-        evid4_note,\
-        evid4_wavelength,\
-        inclination,\
-        semimajor_axis,\
-        seperation,\
-        period_epoch,\
-        orb_freq,\
-        orb_period,\
-        summary,\
-        caveats,\
-        ext_proj) \
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,\
-                %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s);", binary_model)
+    cur.execute(
+    """
+    INSERT INTO binary_model (
+        paper,
+        candidate_name,
+        eccentricity,
+        m1,
+        m2,
+        mtot,
+        mc,
+        mu,
+        q,
+        evid1_type,
+        evid1_note,
+        evid1_wavelength,
+        evid2_type,
+        evid2_note,
+        evid2_wavelength,
+        evid3_type,
+        evid3_note,
+        evid3_wavelength,
+        evid4_type,
+        evid4_note,
+        evid4_wavelength,
+        inclination,
+        semimajor_axis,
+        seperation,
+        period_epoch,
+        orb_freq,
+        orb_period,
+        summary,
+        caveats,
+        ext_proj
+    ) 
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
+    """, binary_model)
     conn.commit() #make sure to actually commit the SQL command to the database
-
     # Always make sure to close the connection to the database 
     # (much like you should always close a file when done with it).
     conn.close()
@@ -173,7 +182,6 @@ def ingest():
         statements telling you whether a source/model has been ingested into the database
 
     '''
-
     # Create the url to the google spreadsheet that contains the
     # source information and a possible link to a model parameter
     # extraction google spreadsheet from the key string value given
@@ -187,12 +195,12 @@ def ingest():
     # put into a pandas dataframe for easy manipulation in python.
     ingestion_data = pd.read_csv(url, usecols = ["Paper Link", "Candidate Name",  "NED Name", "Model Parameter Details"])
 
-
+    failed_redshift = 0
     # Go through all the different sources from the spreadsheet.
     for i in range((len(ingestion_data))):
         # Set the ned_name variable as the information from the NED Name column.
         ned_name = ingestion_data.iloc[i,2]
-        print(ned_name)
+        #print(ned_name)
         # If there is a ned_name given (note that it is possible some
         # candidates don't have this so think about what would need to
         # be done to account for that), get the j2000 ra and dec of
@@ -200,21 +208,29 @@ def ingest():
         # probably put in / use the NED name resolver function in
         # BOBcat utils at this point as well, will come back and
         # figure out exactly where in the script it should be added.
-        if ned_name:
+#        if ned_name:
             # Set the ra_deg and dec_deg variables to the j2000 ra and
             # dec positions given in NED for the source.
-            try:
-                ra, dec = (gw_calc.coord_finder(ned_name))
-            except:
-                candidate_name = ingestion_data.iloc[i,1]
-                ra, dec = (gw_calc.coord_finder(candidate_name))
+        try:
+            ra, dec = (gw_calc.coord_finder(ned_name))
+        except:
+            candidate_name = ingestion_data.iloc[i,1]
+            ra, dec = (gw_calc.coord_finder(candidate_name))
 
-            ra_deg, dec_deg = (gw_calc.coord_converter(ra, dec))
-            # Set redshift variable to the redshift given in NED for the source.
-            redshift = ned.redshift(ra_deg, dec_deg)
-
-        else:
-            print("issues with reading and finding the correct candidate info for ingestion")
+        ra_deg, dec_deg = (gw_calc.coord_converter(ra, dec))
+        # Set redshift variable to the redshift given in NED for the source.
+        try:
+            redshift = ned.redshift(ra_deg,dec_deg,ned_name)
+        except:
+            print("Redshift not found for object " + ned_name)
+            redshift = None
+            failed_redshift += 1
+        #else:
+        #    try:
+        #        redshift = ned.redshift(ra_deg, dec_deg)
+        #    except:
+        #        redshift = None
+        #    print("issues with reading and finding the correct candidate info for ingestion")
         
         obs_type_done = []
         # Create the source array needed to use the ingest_source
@@ -224,7 +240,7 @@ def ingest():
         # notebooks to regular script python. Will come back and fix
         # that as soon as the source class is better situated.
         candidate = [ned_name, ra_deg, dec_deg, redshift, obs_type_done]
-        print(candidate)
+        print(candidate[0])
         # Now try to ingest the source. There is a try/except block
         # here because you cannot ingest the same source more than
         # once. The primary key for the source table is the source
@@ -237,11 +253,11 @@ def ingest():
         # the SQL error thrown when that happens.
         try:
             ingest_candidate(candidate)
-            print("candidate ingested")
+            print("candidate ingested: "+str(candidate[0]))
         except:
-            print("candidate not ingested")
+            raise SystemError("candidate not ingested: "+str(candidate[0]))
 
-        print("DEBUG: NEXT STEPS aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+        print("DEBUG: NEXT STEPS")
 
         if isinstance(ingestion_data.iloc[i,3],str): #this is checking the column for anything and converting it to strings (it could be a NaN if nothing was in the column)
             # Pull just the key of the google spreadsheet out of the link that is listed in the source spreadsheet.
@@ -254,6 +270,7 @@ def ingest():
             # This information gets put into a pandas dataframe for easy manipulation in python.
             binary_model_info = pd.read_csv(binary_model_url, \
                 usecols = ['Name', 'Value'])
+            print(binary_model_info)
                 # Get rid of any actual NaN values because SQL does not like or except that value when trying to
                 # ingest model information.
                 #binary_model_info.replace(np.nan, "", regex=True)
@@ -262,20 +279,23 @@ def ingest():
                 # working and debugging the class code after moving it from ipython notebooks to regular script 
                 # python. Will come back and fix that as soon as the model class is better situated.
             binary_model = binary_model_info.iloc[:30,1]
-            #print(binary_model)
+#            try:
+#                binary_model.iloc[1] = ned_name
+#            except:
+#                print("Couldn't set candidate_name to ned_name for candidate: "+binary_model.iloc[1])
                 # Now try to ingest the source. There is a try/except block here for the exact same reasoning as for the
                 # try/except block used above for ingesting sources.
-            try:
-                ingest_binary_model(binary_model)
-                print("binary model ingested")
-            except:
-                print("binary model not ingested")
+        try:
+            ingest_binary_model(binary_model)
+            print("binary model ingested: "+str(binary_model.iloc[1]))
+        except:
+            raise SystemError("binary model not ingested: "+str(binary_model.iloc[1]))
             # If there isn't actually a link to a model parameter extraction spreadsheet associated with the source
             # entry then just skip over to the next one and check if it has an entry.
         else:
             print("no parameter url in the data entry list")
 
-
+    print("Failed to find redshift for " + str(failed_redshift) + " sources.")
     #return(binary_model)
 
 

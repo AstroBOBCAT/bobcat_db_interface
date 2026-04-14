@@ -3,7 +3,7 @@ from bobcat_db_interface.keys import db_info
 
 def db_connect():
     
-    print("in db_connect")
+    #print("in db_connect")
 
     # This is defining where the file that holds the database connection information lives.
     # This is here to make it easy to change, however, this code may change soon to be housed
@@ -14,10 +14,10 @@ def db_connect():
     # Connect to the database in python.
     conn = psycopg2.connect(database = db_info['dbname'], user = db_info['user'], password = db_info['pass'], host = db_info['host'], port = db_info['port'] )
 
-    print("I ran the psycopg2 conn command")
+    #print("I ran the psycopg2 conn command")
     # Create a cursor instance within the database that allows you to enter SQL commands through python.
     cur = conn.cursor()
 
-    print("at the end of db_connect")
+    #print("at the end of db_connect")
 
     return cur, conn

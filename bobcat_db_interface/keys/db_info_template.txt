@@ -1,5 +1,6 @@
 # This should be copied into your own home directory as follows,
 # .bobcat/db_info.txt
+django_key:fillmein
 dbname:fillmein
 user:fillmein
 pass:fillmein

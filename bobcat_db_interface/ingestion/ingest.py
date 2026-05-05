@@ -227,12 +227,12 @@ def ingest():
 
         ra_deg, dec_deg = (gw_calc.coord_converter(ra, dec))
         # Set redshift variable to the redshift given in NED for the source.
-        #try:
-        redshift = ned.redshift(ra_deg,dec_deg,ned_name)
-        #except:
-            #print("Redshift not found for object " + ned_name)
-            #redshift = None
-            #failed_redshift += 1
+        try:
+            redshift = ned.redshift(ra_deg,dec_deg,ned_name)
+        except SystemError:
+            print("Redshift not found for object " + ned_name)
+            redshift = None
+            failed_redshift += 1
         #else:
         #    try:
         #        redshift = ned.redshift(ra_deg, dec_deg)

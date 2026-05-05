@@ -88,8 +88,13 @@ def ingest_candidate(candidate):
 #        redshift, \
 #        obs_type_done) \
 #        VALUES (%s,%s,%s,%s,%s);", candidate)
-
-    cur.execute(
+    # Check if candidate is already in database
+    cur.execute("SELECT name FROM candidate")
+    # Get list of names in database
+    ingested_candidates = [name[0] for name in cur.fetchall()] # fetchall returns a list of tuples, have to get the strongs from them
+    # If candidate is not in database, ingest it
+    if candidate[0] not in ingested_candidates:
+        cur.execute(
             """
             INSERT INTO candidate (
                 name, ra_deg, dec_deg, redshift, obs_type_done
@@ -97,6 +102,8 @@ def ingest_candidate(candidate):
             """,
             candidate
         )
+    else:
+        print("Candidate " + candidate[0] + " already in database; skipping ingestion.")
     conn.commit() #make sure to actually commit the SQL command to the database
     # Always make sure to close the connection to the database 
     # (much like you should always close a file when done with it).
@@ -211,20 +218,21 @@ def ingest():
 #        if ned_name:
             # Set the ra_deg and dec_deg variables to the j2000 ra and
             # dec positions given in NED for the source.
+        candidate_name = ingestion_data.iloc[i,1]
+
         try:
             ra, dec = (gw_calc.coord_finder(ned_name))
         except:
-            candidate_name = ingestion_data.iloc[i,1]
             ra, dec = (gw_calc.coord_finder(candidate_name))
 
         ra_deg, dec_deg = (gw_calc.coord_converter(ra, dec))
         # Set redshift variable to the redshift given in NED for the source.
-        try:
-            redshift = ned.redshift(ra_deg,dec_deg,ned_name)
-        except:
-            print("Redshift not found for object " + ned_name)
-            redshift = None
-            failed_redshift += 1
+        #try:
+        redshift = ned.redshift(ra_deg,dec_deg,ned_name)
+        #except:
+            #print("Redshift not found for object " + ned_name)
+            #redshift = None
+            #failed_redshift += 1
         #else:
         #    try:
         #        redshift = ned.redshift(ra_deg, dec_deg)
@@ -239,8 +247,7 @@ def ingest():
         # and debugging the class code after moving it from ipython
         # notebooks to regular script python. Will come back and fix
         # that as soon as the source class is better situated.
-        candidate = [ned_name, ra_deg, dec_deg, redshift, obs_type_done]
-        print(candidate[0])
+        candidate = [candidate_name, ra_deg, dec_deg, redshift, obs_type_done]
         # Now try to ingest the source. There is a try/except block
         # here because you cannot ingest the same source more than
         # once. The primary key for the source table is the source
@@ -270,7 +277,6 @@ def ingest():
             # This information gets put into a pandas dataframe for easy manipulation in python.
             binary_model_info = pd.read_csv(binary_model_url, \
                 usecols = ['Name', 'Value'])
-            print(binary_model_info)
                 # Get rid of any actual NaN values because SQL does not like or except that value when trying to
                 # ingest model information.
                 #binary_model_info.replace(np.nan, "", regex=True)
@@ -285,6 +291,11 @@ def ingest():
 #                print("Couldn't set candidate_name to ned_name for candidate: "+binary_model.iloc[1])
                 # Now try to ingest the source. There is a try/except block here for the exact same reasoning as for the
                 # try/except block used above for ingesting sources.
+        if binary_model.iloc[1] != candidate_name:
+            print("=====================================================================================================================================")
+            print(f"WARNING! Candidate name and model name do not match! Setting model name {binary_model.iloc[1]} to candidate name {candidate_name}.")
+            print("=====================================================================================================================================")
+            binary_model.iloc[1] = candidate_name
         try:
             ingest_binary_model(binary_model)
             print("binary model ingested: "+str(binary_model.iloc[1]))

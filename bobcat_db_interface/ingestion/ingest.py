@@ -1,17 +1,25 @@
-## This ingestion script is to be used for ingesting sources from a google spreadsheet. This was choosen as the 
-## offline verison on BOBcat that was created and used to collected candidates before BOBcat started and while
-## BOBcat was in the beginning stages is in a google spreadsheet. However, this ingestion script could be used for
-## any google spreadsheet that is setup in the correct way and that the key for is known. 
-## There should be another ingestion script that deals with pulling data for other databases so candidates from
-## large surveys, such as CRTs, are easy to ingest into BOBcat without having to create an entry into a google 
-## spreadsheet for every single candidate in the surveys.
+#########
+
+## This ingestion script is to be used for ingesting sources from a
+## google spreadsheet. This was choosen as the offline verison on
+## BOBcat that was created and used to collected candidates before
+## BOBcat started and while BOBcat was in the beginning stages is in a
+## google spreadsheet. However, this ingestion script could be used
+## for any google spreadsheet that is setup in the correct way and
+## that the key for is known.
+
+## There should be another ingestion script that deals with pulling
+## data for other databases so candidates from large surveys, such as
+## CRTs, are easy to ingest into BOBcat without having to create an
+## entry into a google spreadsheet for every single candidate in the
+## surveys.
 
 #########
-# Import the libraries, modules, and functions needed for the ingest function to work properly.
-#import sys #this allows this script to be run from the bash command line with the key as an argument 
+
 import pandas as pd #pandas dataframe that the csv file information gets read into for easy manipulation in python
 import numpy as np #numpy
-import psycopg2 
+import psycopg2
+from astropy.coordinates import SkyCoord
 
 from astroquery.ipac.ned import Ned
 Ned.clear_cache()
@@ -254,22 +262,22 @@ def ingest():
         #candidate_name = ingestion_data.iloc[i,1]
         try:
             ra, dec = (ned.coord_finder(ned_names[i]))
-        except Exception as {err}:
-            raise(f"Could not find coordinates for candidate {ned_names[i]}. Traceback: {err}")
-        try:
-            ingest_candidate(candidate)
-            print("candidate ingested: "+str(candidate[0]))
-        except Exception as {err}:
-            raise(f"Candidate not ingested:{str(candidate[0])}; \n Traceback:{err}")
+        except Exception as err:
+            raise RuntimeError(f"Could not find coordinates for candidate {ned_names[i]}.")
 
-        ra_deg, dec_deg = (ned.coord_converter(ra, dec))
+        # Convert sky coords to degrees.
+        coords = SkyCoord(ra,dec)
+        ra_deg = coords.ra.degree
+        dec_deg = coords.dec.degree
+        
         print("Coordinates found for object {}: {}, {}".format(ned_names[i], ra_deg, dec_deg))
         # Set redshift variable to the redshift given in NED for the source.
         try:
             redshift = ned.redshift(ra_deg,dec_deg,ned_names[i])
             print("Redshift found for object " + ned_names[i])
-        except SystemError:
-            print("Redshift not found for object " + ned_names[i])
+        except Exception as err:
+            print(f"Redshift not found for object {ned_names[i]}.")
+            # These two lines below seem redundant given it's throwing an error, but maybe I'm misunderstanding this.
             redshift = None
             failed_redshift += 1
         

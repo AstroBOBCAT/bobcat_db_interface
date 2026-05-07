@@ -24,7 +24,7 @@ from astropy.coordinates import SkyCoord
 from astroquery.ipac.ned import Ned
 Ned.clear_cache()
 # Import the utilities made for BOBcat itself and the specific ingestion utilities made for this process.
-from gw_utils import ned as ned
+from gw_utils import astrodb as astrodb
 
 from bobcat_db_interface.communications import db_comms
 from bobcat_db_interface.keys import db_info
@@ -272,7 +272,7 @@ def ingest():
         print("Coordinates found for object {}: {}, {}".format(ned_names[i], ra_deg, dec_deg))
         # Set redshift variable to the redshift given in NED for the source.
         try:
-            redshift = ned.redshift(ra_deg,dec_deg,ned_names[i])
+            redshift = ned.redshift(ned_names[i])
             print("Redshift found for object " + ned_names[i])
         except Exception as err:
             print(f"Redshift not found for object {ned_names[i]}. Message from redshift query: {err}")

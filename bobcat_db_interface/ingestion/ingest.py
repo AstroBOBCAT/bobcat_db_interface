@@ -12,13 +12,15 @@
 import pandas as pd #pandas dataframe that the csv file information gets read into for easy manipulation in python
 import numpy as np #numpy
 import psycopg2 
+
+from astroquery.ipac.ned import Ned
+Ned.clear_cache()
 # Import the utilities made for BOBcat itself and the specific ingestion utilities made for this process.
 from gw_utils import calc as gw_calc
 from gw_utils import ned as ned
 
 from bobcat_db_interface.communications import db_comms
 from bobcat_db_interface.keys import db_info
-
 
 ## This is used to create the full url needed for having the information in the expected google 
 ## spreadsheet that is outputted into a csv file. All the function needs is the google spreadsheet key that can
@@ -88,13 +90,7 @@ def ingest_candidate(candidate):
 #        redshift, \
 #        obs_type_done) \
 #        VALUES (%s,%s,%s,%s,%s);", candidate)
-    # Check if candidate is already in database
-    cur.execute("SELECT name FROM candidate")
-    # Get list of names in database
-    ingested_candidates = [name[0] for name in cur.fetchall()] # fetchall returns a list of tuples, have to get the strongs from them
-    # If candidate is not in database, ingest it
-    if candidate[0] not in ingested_candidates:
-        cur.execute(
+    cur.execute(
             """
             INSERT INTO candidate (
                 name, ra_deg, dec_deg, redshift, obs_type_done
@@ -102,8 +98,6 @@ def ingest_candidate(candidate):
             """,
             candidate
         )
-    else:
-        print("Candidate " + candidate[0] + " already in database; skipping ingestion.")
     conn.commit() #make sure to actually commit the SQL command to the database
     # Always make sure to close the connection to the database 
     # (much like you should always close a file when done with it).
@@ -163,17 +157,12 @@ def ingest_binary_model(binary_model):
     ) 
     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
     """, binary_model)
+
     conn.commit() #make sure to actually commit the SQL command to the database
     # Always make sure to close the connection to the database 
     # (much like you should always close a file when done with it).
     conn.close()
 ###############
-
-
-
-
-
-
 
 ###############
 def ingest():
@@ -203,7 +192,12 @@ def ingest():
     ingestion_data = pd.read_csv(url, usecols = ["Paper Link", "Candidate Name",  "NED Name", "Model Parameter Details"])
 
     failed_redshift = 0
-    # Go through all the different sources from the spreadsheet.
+    ned_names = []
+    candidate_names = []
+    candidates = []
+    models = []
+    # Go through all the different sources from the spreadsheet.\
+    print("Getting NED Names...")
     for i in range((len(ingestion_data))):
         # Set the ned_name variable as the information from the NED Name column.
         ned_name = ingestion_data.iloc[i,2]
@@ -218,61 +212,21 @@ def ingest():
 #        if ned_name:
             # Set the ra_deg and dec_deg variables to the j2000 ra and
             # dec positions given in NED for the source.
-        candidate_name = ingestion_data.iloc[i,1]
 
-        try:
-            ra, dec = (gw_calc.coord_finder(ned_name))
-        except:
-            ra, dec = (gw_calc.coord_finder(candidate_name))
+        ned_names.append(ned_name)
+        candidate_names.append(ingestion_data.iloc[i,1])        
+    ned_names = list(set(ned_names))
+    candidate_names = list(set(candidate_names))
 
-        ra_deg, dec_deg = (gw_calc.coord_converter(ra, dec))
-        # Set redshift variable to the redshift given in NED for the source.
-        try:
-            redshift = ned.redshift(ra_deg,dec_deg,ned_name)
-        except Exception as err :
-            print("Redshift NED query failed for object " + ned_name)
-            redshift = None
-            failed_redshift += 1
-        #else:
-        #    try:
-        #        redshift = ned.redshift(ra_deg, dec_deg)
-        #    except:
-        #        redshift = None
-        #    print("issues with reading and finding the correct candidate info for ingestion")
-        
-        obs_type_done = []
-        # Create the source array needed to use the ingest_source
-        # function.  This should truly be whether a creation of an
-        # instance of the source class is put. Still currently working
-        # and debugging the class code after moving it from ipython
-        # notebooks to regular script python. Will come back and fix
-        # that as soon as the source class is better situated.
-       candidate = [candidate_name, ra_deg, dec_deg, redshift, obs_type_done]
-        # Now try to ingest the source. There is a try/except block
-        # here because you cannot ingest the same source more than
-        # once. The primary key for the source table is the source
-        # name, so if you try to ingest a source with a name that is
-        # already housed in the database SQL with throw an error and
-        # fully stop the ingestion process. However, there is the
-        # possibility that a source would have multiple papers, and
-        # therefore multiple models, so there could be multiple
-        # entries for a source in the spreadsheet. This accounts for
-        # the SQL error thrown when that happens.
-        try:
-            ingest_candidate(candidate)
-            print("candidate ingested: "+str(candidate[0]))
-        except Exception as {err}:
-            raise(f"Candidate not ingested:{str(candidate[0])}; \n Traceback:{err}")
-
-        print("DEBUG: NEXT STEPS")
-
+    print("Retrieving binary models...")
+    for i in range(len(ingestion_data)):
         if isinstance(ingestion_data.iloc[i,3],str): #this is checking the column for anything and converting it to strings (it could be a NaN if nothing was in the column)
             # Pull just the key of the google spreadsheet out of the link that is listed in the source spreadsheet.
             binary_model_key = ingestion_data.iloc[i,3].split("/")[5]
-            print("DEBUG: Primary model key "+binary_model_key)
+            #print("DEBUG: Primary model key "+binary_model_key)
             # Create the full url to the model parameter extraction spreadsheet
             binary_model_url = create_url(binary_model_key)
-            print("DEBUG: "+binary_model_url)
+            #print("DEBUG: "+binary_model_url)
             # Pull the relativant information about the model from the google spreadsheet.
             # This information gets put into a pandas dataframe for easy manipulation in python.
             binary_model_info = pd.read_csv(binary_model_url, \
@@ -284,27 +238,58 @@ def ingest():
                 # This should truly be whether a creation of an instance of the model class is put. Still currently
                 # working and debugging the class code after moving it from ipython notebooks to regular script 
                 # python. Will come back and fix that as soon as the model class is better situated.
-            binary_model = binary_model_info.iloc[:30,1]
-#            try:
-#                binary_model.iloc[1] = ned_name
-#            except:
-#                print("Couldn't set candidate_name to ned_name for candidate: "+binary_model.iloc[1])
-                # Now try to ingest the source. There is a try/except block here for the exact same reasoning as for the
-                # try/except block used above for ingesting sources.
-        if binary_model.iloc[1] != candidate_name:
-            print("=====================================================================================================================================")
-            print(f"WARNING! Candidate name and model name do not match! Setting model name {binary_model.iloc[1]} to candidate name {candidate_name}.")
-            print("=====================================================================================================================================")
-            binary_model.iloc[1] = candidate_name
-        try:
-            ingest_binary_model(binary_model)
-            print("binary model ingested: "+str(binary_model.iloc[1]))
-        except:
-            raise SystemError("binary model not ingested: "+str(binary_model.iloc[1]))
-            # If there isn't actually a link to a model parameter extraction spreadsheet associated with the source
-            # entry then just skip over to the next one and check if it has an entry.
         else:
-            print("no parameter url in the data entry list")
+            print(f"!!! No parameter url in the data entry list for {ingestion_data.iloc[i,2]} !!!")
+
+        binary_model = binary_model_info.iloc[:30,1]
+        if binary_model.iloc[1] != ingestion_data.iloc[i,2]:
+            print("=====================================================================================================================================")
+            print(f"WARNING! Candidate NED name and model name do not match! Setting model name {binary_model.iloc[1]} to candidate NED name {ingestion_data.iloc[i,2]}.")
+            print("=====================================================================================================================================")
+            binary_model.iloc[1] = ingestion_data.iloc[i,2]
+        models.append(binary_model)
+
+    print("Getting other candidate parameters... This may take a while.")
+    for i in range(len(ned_names)):
+        #candidate_name = ingestion_data.iloc[i,1]
+        try:
+            ra, dec = (ned.coord_finder(ned_names[i]))
+        except Exception as {err}:
+            raise(f"Could not find coordinates for candidate {ned_names[i]}. Traceback: {err}")
+        try:
+            ingest_candidate(candidate)
+            print("candidate ingested: "+str(candidate[0]))
+        except Exception as {err}:
+            raise(f"Candidate not ingested:{str(candidate[0])}; \n Traceback:{err}")
+
+        ra_deg, dec_deg = (ned.coord_converter(ra, dec))
+        print("Coordinates found for object {}: {}, {}".format(ned_names[i], ra_deg, dec_deg))
+        # Set redshift variable to the redshift given in NED for the source.
+        try:
+            redshift = ned.redshift(ra_deg,dec_deg,ned_names[i])
+            print("Redshift found for object " + ned_names[i])
+        except SystemError:
+            print("Redshift not found for object " + ned_names[i])
+            redshift = None
+            failed_redshift += 1
+        
+        obs_type_done = [] # TODO: What is the point of this?
+
+        #candidate = [candidate_name, ra_deg, dec_deg, redshift, obs_type_done]
+        candidates.append([ned_names[i], ra_deg, dec_deg, redshift, obs_type_done])
+
+    for source in candidates:
+        try:
+            ingest_candidate(source)
+            print("candidate ingested: "+str(source[0]))
+        except:
+            raise SystemError("candidate not ingested: "+str(source[0]))
+    for model in models:
+        try:
+            ingest_binary_model(model)
+            print("binary model ingested: "+str(model.iloc[1]))
+        except:
+            raise SystemError("binary model not ingested: "+str(model.iloc[1]))
 
     print("Failed to find redshift for " + str(failed_redshift) + " sources.")
     #return(binary_model)

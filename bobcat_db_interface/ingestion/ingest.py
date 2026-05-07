@@ -229,8 +229,8 @@ def ingest():
         # Set redshift variable to the redshift given in NED for the source.
         try:
             redshift = ned.redshift(ra_deg,dec_deg,ned_name)
-        except SystemError:
-            print("Redshift not found for object " + ned_name)
+        except Exception as err :
+            print("Redshift NED query failed for object " + ned_name)
             redshift = None
             failed_redshift += 1
         #else:
@@ -247,7 +247,7 @@ def ingest():
         # and debugging the class code after moving it from ipython
         # notebooks to regular script python. Will come back and fix
         # that as soon as the source class is better situated.
-        candidate = [candidate_name, ra_deg, dec_deg, redshift, obs_type_done]
+       candidate = [candidate_name, ra_deg, dec_deg, redshift, obs_type_done]
         # Now try to ingest the source. There is a try/except block
         # here because you cannot ingest the same source more than
         # once. The primary key for the source table is the source
@@ -261,8 +261,8 @@ def ingest():
         try:
             ingest_candidate(candidate)
             print("candidate ingested: "+str(candidate[0]))
-        except:
-            raise SystemError("candidate not ingested: "+str(candidate[0]))
+        except Exception as {err}:
+            raise(f"Candidate not ingested:{str(candidate[0])}; \n Traceback:{err}")
 
         print("DEBUG: NEXT STEPS")
 
@@ -324,6 +324,6 @@ if __name__ == "__main__":
 
     # Run ingest function.
 
-
+    print("DEBUG: Started the program. About to run ingest().")
     ingest()
     #ingest("1WU4c_FCEOMEmd1m_680qtqNR7rFIzNztT2GxZpX4dvk","/Users/sbs/.bobcat/db_info.txt")

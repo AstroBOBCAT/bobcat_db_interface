@@ -144,19 +144,19 @@ def check_binary_model(model, url):
     weirdness = False # A flag to add this model to odd_params. False by default.
     if not pd.isnull(model.iloc[5]) and not pd.isnull(calc.Mtot_calc(model.iloc[3], model.iloc[4])) and abs(model.iloc[5] - calc.Mtot_calc(model.iloc[3], model.iloc[4])) > 0.001 * calc.Mtot_calc(model.iloc[3], model.iloc[4]):
         warning(f"Mtot does not match M1 + M2. \nMtot: {model.iloc[5]} \nM1 + M2: {calc.Mtot_calc(model.iloc[3], model.iloc[4])} \nNED Name: {model.iloc[1]}, url: {url}")
-        summary_list_warnings.append(f"\nBinary model for {model.iloc[1]} had Mtot != M1 + M2")
+        summary_list_warnings.append(f"\nBinary model for {model.iloc[1]} had Mtot != M1 + M2. url: {url}")
         weirdness = True
     if not pd.isnull(model.iloc[6]) and not pd.isnull(calc.Mc_calc(model.iloc[3], model.iloc[4])) and abs(model.iloc[6] - calc.Mc_calc(model.iloc[3], model.iloc[4])) > 0.001 * calc.Mc_calc(model.iloc[3], model.iloc[4]):
         warning(f"Mc value does not match given M1, M2. \nGiven Mc: {model.iloc[5]} \nCalculated Mc: {calc.Mc_calc(model.iloc[3], model.iloc[4])} \nNED Name: {model.iloc[1]}, url: {url}")
-        summary_list_warnings.append(f"\nBinary model for {model.iloc[1]} had Mc inconsistent with M1 and M2.")
+        summary_list_warnings.append(f"\nBinary model for {model.iloc[1]} had Mc inconsistent with M1 and M2. url: {url}")
         weirdness = True
     if not pd.isnull(model.iloc[7]) and not pd.isnull(calc.mu_calc(model.iloc[3], model.iloc[4])) and abs(model.iloc[7] - calc.mu_calc(model.iloc[3], model.iloc[4])) > 0.001 * calc.mu_calc(model.iloc[3], model.iloc[4]):
         warning(f"mu value does not match given M1, M2. \nGiven mu: {model.iloc[5]} \nCalculated mu: {calc.Mc_calc(model.iloc[3], model.iloc[4])} \nNED Name: {model.iloc[1]}, url: {url}")
-        summary_list_warnings.append(f"\nBinary model for {model.iloc[1]} had mu inconsistent with M1 and M2.")
+        summary_list_warnings.append(f"\nBinary model for {model.iloc[1]} had mu inconsistent with M1 and M2. url: {url}")
         weirdness = True
     if not pd.isnull(model.iloc[8]) and not pd.isnull(calc.q_calc(model.iloc[3], model.iloc[4])) and abs(model.iloc[8] - calc.q_calc(model.iloc[3], model.iloc[4])) > 0.001 * calc.q_calc(model.iloc[3], model.iloc[4]):
         warning(f"q value does not match given M1, M2. \nGiven q: {model.iloc[8]} \nCalculated q: {calc.q_calc(model.iloc[3], model.iloc[4])} \nNED Name: {model.iloc[1]}, url: {url}")
-        summary_list_warnings.append(f"\nBinary model for {model.iloc[1]} had q inconsistent with M1 and M2.")
+        summary_list_warnings.append(f"\nBinary model for {model.iloc[1]} had q inconsistent with M1 and M2. url: {url}")
         weirdness = True
     if model.iloc[2] == 0 and abs(model.iloc[22] - model.iloc[23]) > 0.001 * model.iloc[23]:
         warning(f"Orbit doesn't make sense for {model.iloc[1]}. e = 0 but a != sep.\nGiven a: {model.iloc[22]}\n Given sep: {model.iloc[23]} \nurl: {url}")
@@ -347,8 +347,8 @@ def ingest():
     # contains the model parameter information.  This information gets
     # put into a pandas dataframe for easy manipulation in python.
 
-    summary_list_warnings = ["==========WARNINGS=========="]
-    summary_list_value_filling = ["==========VALUE FILLING=========="]
+    summary_list_warnings = ["\n==========WARNINGS=========="]
+    summary_list_value_filling = ["\n==========VALUE FILLING=========="]
 
 
     ingestion_data = pd.read_csv(url, usecols = ["Paper Link", "Candidate Name",  "NED Name", "Model Parameter Details"])
@@ -418,8 +418,9 @@ def ingest():
             WARNING! Candidate NED name and model name do not match! Setting model name {binary_model.iloc[1]} to candidate NED name {ingestion_data.iloc[i,2]}.
             ================================================================================================================================================================
             """)
+            old_name = binary_model.iloc[1]
             binary_model.iloc[1] = ingestion_data.iloc[i,2]
-            summary_list_warnings.append("Set model name "+str(binary_model.iloc[1])+" to candidate NED name "+str(ingestion_data.iloc[i,2])+". PLEASE MAKE SURE THEY ARE THE SAME OBJECT!!!")
+            summary_list_warnings.append("Set model name "+str(old_name)+" to candidate NED name "+str(ingestion_data.iloc[i,2])+".")
             name_changes += 1
     
         binary_model, fills = value_filling(binary_model, summary_list_value_filling, summary_list_warnings, binary_model_url)
@@ -436,7 +437,7 @@ def ingest():
     ned_retrieval_times = []
     for i in range(len(ned_names)):
         #candidate_name = ingestion_data.iloc[i,1]
-        start_time = time.time()
+        ned_start_time = time.time()
         try:
             ra, dec = (astrodb.coord_finder(ned_names[i]))
         except Exception as err:
@@ -450,7 +451,6 @@ def ingest():
         
         info("Coordinates found for object {}: {}, {}".format(ned_names[i], ra_deg, dec_deg))
         # Set redshift variable to the redshift given in NED for the source.
-        start_time = time.time()
         try:
             redshift = astrodb.redshift(ned_names[i])
             info("Redshift found for object " + ned_names[i])
@@ -459,8 +459,8 @@ def ingest():
             summary_list_warnings.append("Redshift not found for object "+str(ned_names[i])+".")
             redshift = None
             failed_redshift += 1
-        end_time = time.time()
-        ned_retrieval_times.append(end_time-start_time)
+        ned_end_time = time.time()
+        ned_retrieval_times.append(ned_end_time-ned_start_time)
         obs_type_done = [] # TODO: What is the point of this?
 
         #candidate = [candidate_name, ra_deg, dec_deg, redshift, obs_type_done]
@@ -493,7 +493,7 @@ def ingest():
     Successfully ingested {len(models)} binary models.
     Failed to find redshift for {failed_redshift} sources.
     Had to change {name_changes} names.
-    Successfully filled values for {value_fills} models ({len(models) - value_fills} failed).
+    Successfully filled some values for {value_fills} models ({len(models) - value_fills} failed).
     Found {odd_params} models with inconsistent/suspicious parameters.
     This all took {runtime} seconds.
     Average NED data retrieval time: {np.mean(ned_retrieval_times)} seconds. Max of {np.max(ned_retrieval_times)} seconds.

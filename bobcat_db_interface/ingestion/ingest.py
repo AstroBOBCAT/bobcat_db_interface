@@ -136,7 +136,7 @@ def ingest_binary_model(binary_model):
         evid4_wavelength,\
         inclination,\
         semimajor_axis,\
-        seperation,\
+        separation,\
         period_epoch,\
         orb_freq,\
         orb_period,\

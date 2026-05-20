@@ -54,7 +54,7 @@ binary_model_imap = {
     "evid4_wavelength":21,
     "inclination":22,
     "semimajor_axis":23,
-    "seperation":24,
+    "separation":24,
     "period_epoch":25,
     "orb_freq":26,
     "orb_period":27,

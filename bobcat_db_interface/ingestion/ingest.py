@@ -76,7 +76,9 @@ def create_url(key):
     # very easy to read into a pandas dataframe in other functions.
     url = "https://docs.google.com/spreadsheet/ccc?key=" + key + "&output=csv"
     return url
+
 #############
+
 def check_binary_model(model, url):
     """
     Check if everything is the right dtype, and if so, check if it fits in the ranges of values that are expected for the binary model parameters.
@@ -362,7 +364,8 @@ def ingest():
     candidate_names = []
     candidates = []
     models = []
-    # Go through all the different sources from the spreadsheet.\
+
+    # Go through all the different sources from the spreadsheet.
     print("Getting NED Names...")
     for i in range((len(ingestion_data))):
         # Set the ned_name variable as the information from the NED Name column.
@@ -385,6 +388,7 @@ def ingest():
     candidate_names = list(set(candidate_names))
 
     print("Retrieving binary models...")
+    keys = []
     for i in range(len(ingestion_data)):
         if isinstance(ingestion_data.iloc[i,3],str): #this is checking the column for anything and converting it to strings (it could be a NaN if nothing was in the column)
             # Pull just the key of the google spreadsheet out of the link that is listed in the source spreadsheet.
@@ -392,6 +396,10 @@ def ingest():
             #print("DEBUG: Primary model key "+binary_model_key)
             # Create the full url to the model parameter extraction spreadsheet
             binary_model_url = create_url(binary_model_key)
+            if binary_model_key not in keys:
+                keys.append(binary_model_key)
+            else:
+                raise ValueError(f"Binary model url {binary_model_url} already exists in the list of urls (duplicate sheet)!")
             #print("DEBUG: "+binary_model_url)
             # Pull the relativant information about the model from the google spreadsheet.
             # This information gets put into a pandas dataframe for easy manipulation in python.
@@ -409,7 +417,7 @@ def ingest():
                 # working and debugging the class code after moving it from ipython notebooks to regular script 
                 # python. Will come back and fix that as soon as the model class is better situated.
         else:
-            warning(f"!!! No parameter url in the data entry list for {ingestion_data.iloc[i,2]} !!!")
+            warning(f"\n!!! No parameter url in the data entry list for {ingestion_data.iloc[i,2]} !!!")
 
         binary_model = binary_model_info.iloc[:30,1].astype(object)
         if binary_model.iloc[1] != ingestion_data.iloc[i,2]:
@@ -432,7 +440,8 @@ def ingest():
         if weirdness:
             odd_params += 1
         models.append(binary_model)
-
+    models = pd.DataFrame(models)
+    print(models)
     print("Getting other candidate parameters... This may take a while.")
     ned_retrieval_times = []
     for i in range(len(ned_names)):
@@ -452,7 +461,13 @@ def ingest():
         info("Coordinates found for object {}: {}, {}".format(ned_names[i], ra_deg, dec_deg))
         # Set redshift variable to the redshift given in NED for the source.
         try:
-            redshift = astrodb.redshift(ned_names[i])
+            redshift, name_change = astrodb.redshift(ned_names[i])
+            if name_change:
+                info(f"Updated NED name for object {ned_names[i]} to {name_change} due to more complete NED entry.")
+                # Change name in models to name_change wherever it occurs
+                models.loc[models[1] == ned_names[i], 1] = name_change
+                ned_names[i] = name_change
+                candidate_names[i] = name_change
             info("Redshift found for object " + ned_names[i])
         except Exception as err:
             warning(f"Redshift not found for object {ned_names[i]}. Message from redshift query: {err}")
@@ -472,12 +487,13 @@ def ingest():
             info("Candidate ingested: "+str(source[0]))
         except:
             raise SystemError("candidate not ingested: "+str(source[0]))
-    for model in models:
+    for _, model in models.iterrows():
         try:
             ingest_binary_model(model)
-            info("Binary model ingested: "+str(model.iloc[1]))
         except:
             raise SystemError("Binary model not ingested: "+str(model.iloc[1]))
+        info("Binary model ingested: "+str(model.iloc[1]))
+
     # Summary of ingestion.
 
     for message in summary_list_value_filling:

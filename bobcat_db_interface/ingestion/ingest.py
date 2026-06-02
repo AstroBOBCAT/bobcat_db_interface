@@ -77,6 +77,22 @@ def create_url(key):
     url = "https://docs.google.com/spreadsheet/ccc?key=" + key + "&output=csv"
     return url
 
+def ads_to_scix(link):
+    """
+    Convert ADS links to SciX links.
+    Leaves other links unchanged.
+    Inputs:
+        link - string of the link to convert
+    Outputs:
+        new_link - string of the converted link
+    """
+    if "ui.adsabs" in str(link):
+        key = str(link).split("/")[-2]
+        new_link = "https://scixplorer.org/abs/" + key
+        return new_link
+    else:
+        return str(link), str(key)
+
 #############
 
 def check_binary_model(model, url):
@@ -388,6 +404,12 @@ def ingest():
     candidate_names = list(set(candidate_names))
 
     print("Retrieving binary models...")
+
+    # Convert ADS links to Scix links
+    for i in range(len(ingestion_data)):
+        ingestion_data.iloc[i, 0], bibcodes = ads_to_scix(ingestion_data.iloc[i, 0])
+        # TODO: Store bibcodes in database
+
     keys = []
     for i in range(len(ingestion_data)):
         if isinstance(ingestion_data.iloc[i,3],str): #this is checking the column for anything and converting it to strings (it could be a NaN if nothing was in the column)

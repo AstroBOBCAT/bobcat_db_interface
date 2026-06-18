@@ -255,7 +255,7 @@ def value_filling(model, summary_list_value_filling, summary_list_warnings, url)
     except Exception as e:
         freq_params = pd.Series([np.nan, np.nan], index=['orbital period (earth frame)', 'orbital frequency (earth frame)'])
         #raise e
-        warning(f"Unable to calculate frequency values for {model.loc['source name'].values[0]}  , url: {url}\n exception: {e}")
+        warning(f"Unable to calculate frequency values for {model.loc['source name'].values[0]}, url: {url}\n exception: {e}")
         summary_list_warnings.append(f"Unable to calculate frequency and period for {model.loc["source name"].values[0]}, url: {url}")
     
     filled_model = model
@@ -304,10 +304,11 @@ def ingest_candidate(candidate):
     cur.execute(
             """
             INSERT INTO candidate (
-                name, ra_deg, dec_deg, redshift
-            ) VALUES (%s, %s, %s, %s);
+                jra, jdec, redshift, lum_dist, rating, created_at 
+            ) VALUES (%s, %s, %s, %s, %s, %s)
+            RETURNING candidate_id, lum_dist;
             """,
-            candidate
+            candidate[1:]
         )
     conn.commit() #make sure to actually commit the SQL command to the database
     # Always make sure to close the connection to the database 
@@ -351,7 +352,7 @@ def ingest_binary_model(binary_model, candidate_id, bib_id):
         orb_freq,
         orb_period,
         gw_strain,
-        gw_freq,
+        gw_inspiral_timescale,
         summary,
         caveats,
         ext_proj,
@@ -532,8 +533,8 @@ def ingest():
 
         ned_names.append(ned_name)
         candidate_names.append(ingestion_data.iloc[i,1])        
-    ned_names = list(set(ned_names))
-    candidate_names = list(set(candidate_names))
+    ned_names = np.unique(ned_names)
+    candidate_names = np.unique(candidate_names)
 
     print("Retrieving binary models...")
 
@@ -673,51 +674,65 @@ def ingest():
             summary_list_warnings.append("Redshift not found for object "+str(ned_names[i])+".")
             redshift = np.nan
             failed_redshift += 1
+        if not np.isnan(redshift):
+            Dl = calc.cosmo_calc(float(redshift))
         ned_end_time = time.time()
         ned_retrieval_times.append(ned_end_time-ned_start_time)
 
         #candidate = [candidate_name, ra_deg, dec_deg, redshift]
-        candidates.append([ned_names[i], ra_deg, dec_deg, redshift])
-    
+        candidates.append([ned_names[i], ra_deg, dec_deg, redshift, Dl, np.nan, time.time()]) # TODO: Integrate the rating system into this
+
+    # Ingestion and additional calculated properties
     candidate_ids = pd.Series(index=np.unique(ned_names))
+    candidate_Dls = pd.Series(index=np.unique(ned_names))
     for source in candidates:
         try:
-            candidate_id = ingest_candidate(source)
+            candidate_id, Dl = ingest_candidate(source)
             candidate_ids[source[0]] = candidate_id
-        except:
-            raise SystemError("candidate not ingested: "+str(source[0]))
-        info("Candidate ingested: "+str(source[0]))
+            candidate_Dls[source[0]] = Dl
+        except Exception as e:
+            raise SystemError(f"Candidate not ingested: {source[0]}. Error: {e}")
+        info(f"Candidate ingested: {source[0]}")
 
     for _, model in models.iterrows():
         try:
             bib_id = ingest_bibliography(bib_info.loc[_])
-        except:
-            raise SystemError("Bibliography not ingested: "+str(model.iloc[1]))
-        info("Bibliography ingested: "+str(model.iloc[1]))
+        except Exception as e:
+            raise SystemError(f"Bibliography not ingested: {model.iloc[1]}. Error: {e}")
+        info(f"Bibliography ingested: {model.iloc[1]}")
+
+        # Additional calculated properties
+        ###########
+        h = calc.strain_calc(10**float(model["log(chirp mass)"]), float(candidate_Dls[model["source name"]]), 2*float(model["orbital frequency (earth frame)"]))
+        timescale = np.nan # TODO: implement this properly
+        new_model = model.copy().insert(16, "gw_strain", h)
+        new_model = new_model.insert(17, "gw_timescale", timescale)
+        new_model = new_model.insert(0, "created_at", time.time())
+        ###########
 
         try:
-            binary_model_id = ingest_binary_model(model, candidate_ids[model["source name"]], bib_id)
-        except:
-            raise SystemError("Binary model not ingested: "+str(model.iloc[1]))
-        info("Binary model ingested: "+str(model.iloc[1]))
+            binary_model_id = ingest_binary_model(new_model, candidate_ids[model["source name"]], bib_id)
+        except Exception as e:
+            raise SystemError(f"Binary model not ingested: {model.iloc[1]}. Error: {e}")
+        info(f"Binary model ingested: {model.iloc[1]}")
 
         try:
             ingest_errs(binary_model_err_vals_and_types, binary_model_id)
-        except:
-            raise SystemError("Binary model errors not ingested: "+str(model.iloc[1]))
-        info("Binary model errors ingested: "+str(model.iloc[1]))
+        except Exception as e:
+            raise SystemError(f"Binary model errors not ingested: {model.iloc[1]}. Error: {e}")
+        info(f"Binary model errors ingested: {model.iloc[1]}")
 
         try:
             subcat_id = ingest_evidence_subcat(evidence_subcat, binary_model_id)
-        except:
-            raise SystemError("Binary model evidence subcategories not ingested: "+str(model.iloc[1]))
-        info("Binary model evidence subcategories ingested: "+str(model.iloc[1]))
+        except Exception as e:
+            raise SystemError(f"Binary model evidence subcategories not ingested: {model.iloc[1]}. Error: {e}")
+        info(f"Binary model evidence subcategories ingested: {model.iloc[1]}")
 
         try:
             ingest_evidence_waveband(evidence_waveband, subcat_id)
-        except:
-            raise SystemError("Binary model evidence wavebands not ingested: "+str(model.iloc[1]))
-        info("Binary model evidence wavebands ingested: "+str(model.iloc[1]))
+        except Exception as e:
+            raise SystemError(f"Binary model evidence wavebands not ingested: {model.iloc[1]}. Error: {e}")
+        info(f"Binary model evidence wavebands ingested: {model.iloc[1]}")
 
     # Summary of ingestion.
 

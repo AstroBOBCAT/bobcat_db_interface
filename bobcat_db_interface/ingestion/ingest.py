@@ -16,19 +16,19 @@
 
 #########
 
-from math import nan
-from types import NoneType
+from math import nan # I don't think we use this? -- sarah
+from types import NoneType # I don't think we use this either? -- sarah
 import pandas as pd #pandas dataframe that the csv file information gets read into for easy manipulation in python
 import numpy as np #numpy
-import psycopg2
+#import psycopg2
 from logging import warning
 from logging import info
 import time
 from astropy.coordinates import SkyCoord
 from astropy.time import Time
 import traceback
-import urllib.error
-from itertools import count
+import urllib.error # I don't think we use this? -- sarah
+from itertools import count  # I don't think we use this? -- sarah
 
 from astroquery.ipac.ned import Ned
 Ned.clear_cache()

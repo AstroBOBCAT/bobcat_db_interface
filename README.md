@@ -21,7 +21,7 @@ hunters.
 # Documentation
 
 To be updated once the documentation is housed in a public webpage. If documentation 
-is needed before that please email js0311@mux.wvu.edu for access to the PDF.
+is needed before that please email sarah.spolaor@mail.wvu.edu
 
 # Citation
 

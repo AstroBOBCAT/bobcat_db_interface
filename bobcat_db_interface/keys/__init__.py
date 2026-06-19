@@ -7,7 +7,9 @@ db_info = {
     "dbname": os.getenv("POSTGRES_DB"),
     "user": os.getenv("POSTGRES_USER"),
     "pass": os.getenv("POSTGRES_PASSWORD"),
-    "host": os.getenv("POSTGRES_HOST", "db"),
-    "port": os.getenv("POSTGRES_PORT", "5432"),
+    "host": os.getenv("POSTGRES_HOST"),
+    "port": os.getenv("POSTGRES_PORT"),
+    "googlekey": os.getenv("GOOGLE_KEY"),
+    "django_key": os.getenv("DJANGO_KEY"),
 }
 #db_info = {line.split(":", 1)[0].strip(): line.split(":", 1)[1].strip() for line in open(db_info_file) if ':' in line}

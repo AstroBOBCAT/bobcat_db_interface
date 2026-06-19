@@ -19,7 +19,7 @@
 from math import nan
 from types import NoneType
 import pandas as pd #pandas dataframe that the csv file information gets read into for easy manipulation in python
-import numpy as np #numpy
+import numpy as np 
 import psycopg2
 from logging import warning
 from logging import info
@@ -39,18 +39,7 @@ from gw_utils import calc
 from bobcat_db_interface.communications import db_comms
 from bobcat_db_interface.keys import db_info
 
-## This is used to create the full url needed for having the information in the expected google 
-## spreadsheet that is outputted into a csv file. All the function needs is the google spreadsheet key that can
-## be found in the google spreadsheet link. Note that the link in the browser when you open a google
-## spreadsheet will contain the key needed but it is not the correct url needed. Hence this function
-## was created to make sure the url was the correct format needed.
-
-##############
-# SARAH! This key needs to stay key because it's referenced by both
-# the master and parameter extraction functions.
-##############
 def create_url(key):
-
     '''.
 
     Create url for a google spreadsheet such that it is in csv format
@@ -65,10 +54,6 @@ def create_url(key):
 
     '''
 
-    # First we need to check that the key given is actually a string.
-    # If it isn't a string we could change it into a string but it is
-    # probably better to raise an error to make sure the user is aware
-    # of what is wanted for the function.
     if not isinstance(key, str):
         raise TypeError("key must be a string")
 
@@ -481,7 +466,6 @@ def ingest():
         N/A
     Outputs:
         statements telling you whether a source/model has been ingested into the database
-
     '''
 
     start_time = time.time()
@@ -491,11 +475,6 @@ def ingest():
     # extraction google spreadsheet from the key string value given
     # for using the function.
     url = create_url(db_info['googlekey'])
-    # Pull the relativant information about the source from the google
-    # spreadsheet, this includes the paper link, the name of the
-    # source in NED, and a link to another google spreadsheet that
-    # contains the model parameter information.  This information gets
-    # put into a pandas dataframe for easy manipulation in python.
 
     summary_list_warnings = ["\n==========WARNINGS=========="]
     summary_list_value_filling = ["\n==========VALUE FILLING=========="]
@@ -538,26 +517,20 @@ def ingest():
 
     print("Retrieving binary models...")
 
-    # Convert ADS links to Scix links
-    bibcodes = []
-    for i in range(len(ingestion_data)):
-        ingestion_data.iloc[i, 0], bibcode = ads_to_scix(ingestion_data.iloc[i, 0])
-        bibcodes.append(bibcode)
-        # TODO: Store bibcodes in database
-
     keys = []
     for i in range(len(ingestion_data)):
         if isinstance(ingestion_data.iloc[i,3],str): #this is checking the column for anything and converting it to strings (it could be a NaN if nothing was in the column)
+            
             # Pull just the key of the google spreadsheet out of the link that is listed in the source spreadsheet.
             binary_model_key = ingestion_data.iloc[i,3].split("/")[5]
-            #print("DEBUG: Primary model key "+binary_model_key)
+
             # Create the full url to the model parameter extraction spreadsheet
             binary_model_url = create_url(binary_model_key)
             if binary_model_key not in keys:
                 keys.append(binary_model_key)
             else:
                 raise ValueError(f"Binary model url {binary_model_url} already exists in the list of urls (duplicate sheet)!")
-            #print("DEBUG: "+binary_model_url)
+            
             # Pull the relativant information about the model from the google spreadsheet.
             # This information gets put into a pandas dataframe for easy manipulation in python.
             try:
@@ -566,10 +539,6 @@ def ingest():
             except Exception as e:
                 raise SystemError(f"Unable to connect to spreadsheet {binary_model_url}\nSpecific error message: {e}")
 
-            # Create the model array needed to use the ingest_model function. 
-            # This should truly be whether a creation of an instance of the model class is put. Still currently
-            # working and debugging the class code after moving it from ipython notebooks to regular script 
-            # python. Will come back and fix that as soon as the model class is better situated.
         else:
             warning(f"\n!!! No parameter url in the data entry list for {ingestion_data.iloc[i,2]} !!!")
 
@@ -647,18 +616,19 @@ def ingest():
     print("Getting other candidate parameters... This may take a while.")
     ned_retrieval_times = []
     for i in range(len(ned_names)):
-        #candidate_name = ingestion_data.iloc[i,1]
         ned_start_time = time.time()
         try:
             ra, dec = (astrodb.coord_finder(ned_names[i]))
         except Exception as err:
             raise RuntimeError(f"Could not find coordinates for candidate {ned_names[i]}.")
+
         # Convert sky coords to degrees.
         coords = SkyCoord(ra,dec)
         ra_deg = float(coords.ra.degree)
         dec_deg = float(coords.dec.degree)
         
         info("Coordinates found for object {}: {}, {}".format(ned_names[i], ra_deg, dec_deg))
+
         # Set redshift variable to the redshift given in NED for the source.
         try:
             redshift, name_change = astrodb.redshift(ned_names[i])

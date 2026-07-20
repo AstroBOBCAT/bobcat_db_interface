@@ -36,7 +36,7 @@ CREATE TABLE binary_model (
     evid4_wavelength VARCHAR(25),
     inclination FLOAT4,
     semimajor_axis FLOAT4,
-    seperation FLOAT4,
+    separation FLOAT4,
     period_epoch FLOAT4,
     orb_freq FLOAT8,
     orb_period FLOAT8,

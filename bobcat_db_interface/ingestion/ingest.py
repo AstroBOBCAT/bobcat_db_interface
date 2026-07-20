@@ -135,7 +135,7 @@ def check_binary_model(model, url):
     if float(model.loc['semi-major axis'].values[0]) < 0 or float(model.loc['semi-major axis'].values[0]) > 1000:
         raise ValueError(f"Semimajor axis must be between 0 and 1000. {model.loc['semi-major axis'].values[0]} given. NED Name: {model.loc["source name"].values[0]}, url: {url}")
     if float(model.loc['separation'].values[0]) < 0 or float(model.loc['separation'].values[0]) > 1000:
-        raise ValueError(f"Seperation must be between 0 and 1000. {model.loc['separation'].values[0]} given. NED Name: {model.loc["source name"].values[0]}, url: {url}")
+        raise ValueError(f"Separation must be between 0 and 1000. {model.loc['separation'].values[0]} given. NED Name: {model.loc["source name"].values[0]}, url: {url}")
     if float(model.loc['period epoch'].values[0]) < 40000 or float(model.loc['period epoch'].values[0]) > Time.now().mjd:
         raise ValueError(f"Period epoch must be between 40000 and current date {Time.now().mjd} MJD. {model.loc['period epoch'].values[0]} given. NED Name: {model.loc["source name"].values[0]}, url: {url}")
     if float(model.loc['orbital frequency (earth frame)'].values[0]) < 0:
@@ -332,7 +332,7 @@ def ingest_binary_model(binary_model, candidate_id, bib_id):
         q,
         inclination,
         semimajor_axis,
-        seperation,
+        separation,
         period_epoch,
         orb_freq,
         orb_period,
